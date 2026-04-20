@@ -1,0 +1,247 @@
+/* Layout */
+.stm-archive-wrap {
+  display: flex;
+  gap: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  align-items: flex-start;
+}
+
+/* Sidebar */
+.stm-cat-sidebar {
+  width: 230px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 100px;
+  border-right: 1px solid #e5e7eb;
+  padding-right: 1.5rem;
+}
+
+.stm-sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  margin-bottom: 0.75rem;
+}
+
+.stm-cat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stm-cat-item {
+  margin: 0;
+}
+
+.stm-cat-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+  font-size: 14px;
+  color: #374151;
+  transition: all 0.15s ease;
+}
+
+.stm-cat-link:hover {
+  background: #f3f4f6;
+  color: #111827;
+  text-decoration: none;
+}
+
+.stm-cat-link.active {
+  border-left-color: #6366f1;
+  background: #eef2ff;
+  color: #4338ca;
+  font-weight: 600;
+}
+
+.stm-cat-count {
+  font-size: 12px;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 999px;
+  min-width: 24px;
+  text-align: center;
+}
+
+.stm-cat-link.active .stm-cat-count {
+  background: #c7d2fe;
+  color: #3730a3;
+}
+
+/* Main area */
+.stm-course-main {
+  flex: 1;
+  padding-left: 2rem;
+  min-width: 0;
+}
+
+.stm-main-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.stm-main-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0;
+  color: #111827;
+}
+
+.stm-result-count {
+  font-size: 13px;
+  color: #9ca3af;
+}
+
+/* Course grid */
+.stm-course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1.25rem;
+  transition: opacity 0.2s ease;
+}
+
+/* Course card */
+.stm-course-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.stm-course-card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.stm-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.stm-card-thumb img {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  display: block;
+}
+
+.stm-thumb-placeholder {
+  width: 100%;
+  height: 140px;
+  background: #e0e7ff;
+}
+
+.stm-card-body {
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 118px;
+}
+
+.stm-cat-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4338ca;
+  background: #eef2ff;
+  padding: 3px 8px;
+  border-radius: 4px;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+
+.stm-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.stm-card-meta {
+  font-size: 12px;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: auto;
+}
+
+.stm-card-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stm-meta-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #d1d5db;
+  display: inline-block;
+}
+
+.stm-price {
+  color: #111827;
+  font-weight: 700;
+  white-space: nowrap;
+  margin-left: auto;
+}
+
+.stm-no-courses {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: #9ca3af;
+  padding: 3rem 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .stm-archive-wrap {
+    flex-direction: column;
+  }
+  .stm-cat-sidebar {
+    width: 100%;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+    padding-right: 0;
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .stm-course-main {
+    padding-left: 0;
+  }
+  .stm-cat-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .stm-cat-link {
+    border-left: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 13px;
+  }
+  .stm-cat-link.active {
+    border-color: #6366f1;
+    background: #eef2ff;
+  }
+}
