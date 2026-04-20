@@ -4,6 +4,7 @@ $stm_post_id   = get_the_ID();
 $stm_thumb     = get_the_post_thumbnail_url( $stm_post_id, 'medium' );
 $stm_permalink = get_permalink( $stm_post_id );
 $stm_title     = get_the_title( $stm_post_id );
+$stm_is_new    = function_exists( 'stm_is_course_new' ) ? stm_is_course_new( $stm_post_id ) : false;
 
 $stm_cats     = get_the_terms( $stm_post_id, 'course-category' );
 $stm_cat_name = ( ! is_wp_error( $stm_cats ) && ! empty( $stm_cats ) )
@@ -26,11 +27,18 @@ if ( function_exists( 'tutor_utils' ) ) {
     <a href="<?php echo esc_url( $stm_permalink ); ?>" class="stm-card-link">
         <div class="stm-card-thumb">
             <?php if ( $stm_thumb ) : ?>
+                <?php if ( $stm_is_new ) : ?>
+                    <span class="stm-card-badge-new">New This Month</span>
+                <?php endif; ?>
                 <img src="<?php echo esc_url( $stm_thumb ); ?>"
                      alt="<?php echo esc_attr( $stm_title ); ?>"
                      loading="lazy">
             <?php else : ?>
-                <div class="stm-thumb-placeholder"></div>
+                <div class="stm-thumb-placeholder">
+                    <?php if ( $stm_is_new ) : ?>
+                        <span class="stm-card-badge-new">New This Month</span>
+                    <?php endif; ?>
+                </div>
             <?php endif; ?>
         </div>
 

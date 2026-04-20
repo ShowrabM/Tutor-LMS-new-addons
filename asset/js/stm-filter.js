@@ -1,14 +1,29 @@
 (function($) {
   'use strict';
 
-  function updateResultCount($archive, count) {
+  function updateResultCount($archive, count, newCountLabel) {
     var suffix = count === 1 ? '' : 's';
-    $archive.find('.stm-result-count').text(count + ' course' + suffix);
+    var html = count + ' course' + suffix;
+
+    if (newCountLabel) {
+      html += ' <span class="stm-result-new-count">' + newCountLabel + '</span>';
+    }
+
+    $archive.find('.stm-result-count').html(html);
+  }
+
+  function getArchiveTitle(catId, catName, defaultTitle) {
+    if (String(catId) === '0') {
+      return defaultTitle;
+    }
+
+    return catName;
   }
 
   function initArchive($archive) {
     var initialCount = $archive.find('.stm-course-card').length;
-    updateResultCount($archive, initialCount);
+    var initialNewLabel = $archive.find('.stm-result-new-count').text().trim();
+    updateResultCount($archive, initialCount, initialNewLabel);
   }
 
   $(document).ready(function() {
@@ -31,7 +46,7 @@
 
       $archive.find('.stm-cat-link').removeClass('active');
       $clicked.addClass('active');
-      $archive.find('.stm-main-title').text(catId === 0 ? defaultTitle : catName);
+      $archive.find('.stm-main-title').text(getArchiveTitle(catId, catName, defaultTitle));
       $grid.css({ opacity: 0.4, pointerEvents: 'none' });
 
       $.ajax({
@@ -48,12 +63,12 @@
         success: function(res) {
           if (res.success) {
             $grid.html(res.data.html);
-            updateResultCount($archive, res.data.count);
+            updateResultCount($archive, res.data.count, res.data.new_count_label);
           }
         },
         error: function() {
           $grid.html('<p class="stm-no-courses">Something went wrong. Please try again.</p>');
-          updateResultCount($archive, 0);
+          updateResultCount($archive, 0, '');
         },
         complete: function() {
           $grid.css({ opacity: 1, pointerEvents: 'auto' });
