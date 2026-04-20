@@ -2,9 +2,9 @@
 .stm-archive-wrap {
   display: flex;
   gap: 0;
-  max-width: 1380px;
+  max-width: 1440px;
   margin: 0 auto;
-  padding: 2.25rem 1rem;
+  padding: 2.25rem 1.5rem;
   align-items: flex-start;
 }
 
@@ -85,7 +85,6 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
   font-size: 12px;
   background: #f3f4f6;
   color: #6b7280;
@@ -94,6 +93,7 @@
   min-width: 30px;
   text-align: center;
   font-weight: 600;
+  flex-shrink: 0;
 }
 
 .stm-cat-link.active .stm-cat-count {
@@ -108,6 +108,7 @@
   min-width: 0;
 }
 
+/* Demo sidebar */
 .stm-demo-sidebar {
   width: 180px;
   flex-shrink: 0;
@@ -129,6 +130,7 @@
   text-decoration: none;
   font-size: 14px;
   line-height: 1.2;
+  transition: background 0.18s ease, color 0.18s ease;
 }
 
 .stm-demo-sidebar-button:hover {
@@ -185,11 +187,12 @@
   color: #6b7280;
 }
 
+/* Archive header */
 .stm-main-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
   gap: 12px;
 }
 
@@ -215,50 +218,59 @@
   font-weight: 600;
 }
 
-/* Course grid */
+/* Course grid — 3 columns, fills main area */
 .stm-course-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(255px, 1fr));
-  gap: 1.4rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
   transition: opacity 0.2s ease;
 }
 
-/* Course card */
+/* Course card — framed */
 .stm-course-card {
-  border: 1px solid #e5e7eb;
+  border: 1.5px solid #e5e7eb;
   border-radius: 16px;
   overflow: hidden;
   background: #fff;
-  transition: box-shadow 0.2s ease, transform 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
+  transition: box-shadow 0.22s ease, transform 0.22s ease,
+              border-color 0.22s ease, background 0.22s ease;
 }
 
 .stm-course-card:hover {
-  box-shadow: 0 18px 40px rgba(17, 24, 39, 0.08);
-  border-color: #d8def0;
-  transform: translateY(-4px);
+  box-shadow: 0 20px 44px rgba(99, 102, 241, 0.14);
+  border-color: #6366f1;
+  transform: translateY(-5px);
+  background: #f9f8ff;
 }
 
 .stm-card-link {
   text-decoration: none;
   color: inherit;
-  display: block;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Thumbnail */
+.stm-card-thumb {
+  position: relative;
+  flex-shrink: 0;
 }
 
 .stm-card-thumb img {
   width: 100%;
-  height: 152px;
+  height: 190px;
   object-fit: cover;
   display: block;
 }
 
 .stm-thumb-placeholder {
   width: 100%;
-  height: 152px;
-  background: #e0e7ff;
-  position: relative;
-}
-
-.stm-card-thumb {
+  height: 190px;
+  background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
   position: relative;
 }
 
@@ -270,7 +282,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: #dc2626;
   color: #fff;
@@ -278,26 +290,29 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.24);
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.28);
 }
 
+/* Card body */
 .stm-card-body {
-  padding: 14px 16px 16px;
+  padding: 18px 18px 20px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-height: 128px;
+  gap: 6px;
+  flex: 1;
 }
 
 .stm-cat-tag {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   color: #4338ca;
   background: #eef2ff;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 4px;
   display: inline-block;
-  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  align-self: flex-start;
 }
 
 .stm-card-title {
@@ -305,7 +320,7 @@
   font-weight: 700;
   color: #111827;
   margin: 0;
-  line-height: 1.4;
+  line-height: 1.45;
   text-transform: uppercase;
 }
 
@@ -314,31 +329,40 @@
   color: #6b7280;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: auto;
-}
-
-.stm-card-meta-left {
-  display: flex;
-  align-items: center;
   gap: 6px;
-  min-width: 0;
+  margin-top: 2px;
 }
 
-.stm-meta-dot {
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: #d1d5db;
-  display: inline-block;
+/* Price button — centered at card bottom */
+.stm-price-btn-wrap {
+  margin-top: auto;
+  padding-top: 16px;
+  display: flex;
+  justify-content: center;
 }
 
-.stm-price {
-  color: #059669;
+.stm-price-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 32px;
+  border-radius: 8px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 14px;
   font-weight: 700;
-  white-space: nowrap;
-  margin-left: auto;
+  letter-spacing: 0.02em;
+  border: 2px solid #6366f1;
+  min-width: 120px;
+  text-align: center;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.22);
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stm-course-card:hover .stm-price-btn {
+  background: #4338ca;
+  border-color: #4338ca;
+  box-shadow: 0 6px 20px rgba(67, 56, 202, 0.38);
 }
 
 .stm-no-courses {
@@ -348,11 +372,20 @@
   padding: 3rem 0;
 }
 
-/* Responsive */
+/* Tablet: 2 columns */
+@media (max-width: 1024px) {
+  .stm-course-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Mobile */
 @media (max-width: 768px) {
   .stm-archive-wrap {
     flex-direction: column;
+    padding: 1.5rem 1rem;
   }
+
   .stm-cat-sidebar {
     width: 100%;
     position: static;
@@ -362,44 +395,61 @@
     padding-bottom: 1rem;
     margin-bottom: 1.5rem;
   }
+
   .stm-course-main {
     padding-left: 0;
   }
+
   .stm-demo-sidebar {
     width: 100%;
     margin-left: 0;
     margin-top: 1.5rem;
     position: static;
   }
+
+  .stm-demo-panel {
+    min-height: 0;
+  }
+
   .stm-cat-list {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
   }
+
   .stm-cat-link {
     border-left: none;
     border: 1px solid #e5e7eb;
     border-radius: 999px;
     padding: 5px 12px;
     font-size: 13px;
-    transform: none;
+    transform: none !important;
   }
+
   .stm-cat-link.active {
     border-color: #6366f1;
     background: #eef2ff;
   }
+
   .stm-main-title {
     font-size: 26px;
   }
+
   .stm-course-grid {
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
+
   .stm-result-new-count {
     display: block;
     margin-left: 0;
     margin-top: 4px;
   }
-  .stm-demo-panel {
-    min-height: 0;
+}
+
+/* Phone: 1 column */
+@media (max-width: 480px) {
+  .stm-course-grid {
+    grid-template-columns: 1fr;
   }
 }

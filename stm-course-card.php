@@ -46,14 +46,17 @@ if ( function_exists( 'tutor_utils' ) ) {
             <?php if ( $stm_cat_name ) : ?>
                 <span class="stm-cat-tag"><?php echo esc_html( $stm_cat_name ); ?></span>
             <?php endif; ?>
+
             <h3 class="stm-card-title"><?php echo esc_html( $stm_title ); ?></h3>
-            <div class="stm-card-meta">
-                <div class="stm-card-meta-left">
-                    <?php if ( $stm_lesson_count ) : ?>
-                        <span><?php echo absint( $stm_lesson_count ); ?> lessons</span>
-                    <?php endif; ?>
+
+            <?php if ( $stm_lesson_count ) : ?>
+                <div class="stm-card-meta">
+                    <span><?php echo absint( $stm_lesson_count ); ?> lessons</span>
                 </div>
-                <span class="stm-price"><?php echo esc_html( $stm_price ); ?></span>
+            <?php endif; ?>
+
+            <div class="stm-price-btn-wrap">
+                <span class="stm-price-btn"><?php echo esc_html( $stm_price ); ?></span>
             </div>
         </div>
     </a>
