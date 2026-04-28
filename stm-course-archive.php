@@ -3,7 +3,7 @@
 Template Name: Tutor LMS Customization
 Description: Tutor LMS course archive with category filtering.
 Author: Showrab Mojumdar
-Version: 1.0
+Version: 1.1.1
 License: GPLv2 or later
 */
 

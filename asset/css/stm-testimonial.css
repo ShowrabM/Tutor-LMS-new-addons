@@ -1,8 +1,8 @@
 .tdl-t-msg { margin-bottom: 16px; padding: 12px 14px; border-radius: 8px; background: #ecfdf5; color: #065f46; max-width: 760px; }
-.tdl-t-form { max-width: 760px; }
+.tdl-t-form { max-width: 760px; width: 100%; }
 .tdl-t-field { margin-bottom: 16px; }
 .tdl-t-field label { display: block; font-weight: 600; margin-bottom: 6px; }
-.tdl-t-field input, .tdl-t-field textarea, .tdl-t-field select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
+.tdl-t-field input, .tdl-t-field textarea, .tdl-t-field select { width: 100%; max-width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 14px; }
 .tdl-t-field textarea { min-height: 130px; resize: vertical; }
 .tdl-t-row { display: flex; gap: 10px; align-items: center; }
 .tdl-t-row input { flex: 1; }
@@ -19,7 +19,7 @@ body.tdl-t-modal-open { overflow: hidden; }
 .tdl-t-modal { position: fixed; inset: 0; z-index: 99999; display: none; }
 .tdl-t-modal.is-open { display: block; }
 .tdl-t-modal-backdrop { position: absolute; inset: 0; background: rgba(17,24,39,.6); }
-.tdl-t-modal-dialog { position: relative; z-index: 1; width: min(840px, calc(100% - 32px)); max-height: calc(100vh - 48px); margin: 24px auto; overflow: auto; border-radius: 16px; background: #fff; padding: 24px; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
+.tdl-t-modal-dialog { position: relative; z-index: 1; width: min(840px, calc(100% - 32px)); max-height: calc(100vh - 48px); margin: 24px auto; overflow: auto; border-radius: 16px; background: #fff; padding: 24px; box-sizing: border-box; box-shadow: 0 20px 50px rgba(0,0,0,.2); }
 .tdl-t-modal-title { margin: 0 0 16px; font-size: 24px; line-height: 1.2; }
 .tdl-t-modal-close { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; border: 0; border-radius: 999px; background: #f3f4f6; color: #111827; font-size: 20px; line-height: 1; cursor: pointer; }
 .tdl-t-modal-close:hover { background: #e5e7eb; }
@@ -41,7 +41,7 @@ body.tdl-t-modal-open { overflow: hidden; }
 .tdl-tc-star-off { color: #4b5563; }
 .tdl-tc-footer { display: flex; align-items: center; gap: 14px; border-top: 1px solid rgba(255,255,255,.08); padding-top: 18px; margin-top: auto; }
 .tdl-tc-logo { width: 64px; height: 64px; border-radius: 10px; object-fit: contain; background: #fff; flex-shrink: 0; padding: 4px; box-sizing: border-box; }
-.tdl-tc-meta { min-width: 0; }
+.tdl-tc-meta { min-width: 0; flex: 1; }
 .tdl-tc-name { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tdl-tc-company { font-size: 12px; color: #9ca3af; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tdl-tc-company a { color: #9ca3af; text-decoration: none; }
@@ -66,5 +66,21 @@ body.tdl-t-modal-open { overflow: hidden; }
 .tdl-tc-arrow.next { right: -18px; }
 .tdl-tc-arrow svg { width: 18px; height: 18px; }
 @media (max-width: 1024px) { .tdl-tc-card { flex: 0 0 calc(50% - 12px); } }
-@media (max-width: 767px) { .tdl-t-row { flex-direction: column; align-items: stretch; } }
-@media (max-width: 640px) { .tdl-tc-card { flex: 0 0 100%; } .tdl-tc-arrow.prev { left: -10px; } .tdl-tc-arrow.next { right: -10px; } }
+@media (max-width: 767px) {
+  .tdl-t-modal-dialog { width: calc(100% - 20px); max-height: calc(100vh - 20px); margin: 10px auto; padding: 18px 14px; border-radius: 12px; }
+  .tdl-t-modal-title { padding-right: 40px; font-size: 20px; }
+  .tdl-t-row { flex-direction: column; align-items: stretch; }
+  .tdl-t-btn { width: 100%; min-height: 44px; white-space: normal; }
+  .tdl-t-list-title { margin-top: 28px; }
+  .tdl-t-table { display: block; overflow-x: auto; white-space: nowrap; }
+  .tdl-tc-wrap { padding: 8px 0 26px; }
+  .tdl-tc-body { padding: 22px 18px 18px; }
+  .tdl-tc-footer { align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .tdl-tc-card { flex: 0 0 100%; }
+  .tdl-tc-arrow { width: 36px; height: 36px; }
+  .tdl-tc-arrow.prev { left: 4px; }
+  .tdl-tc-arrow.next { right: 4px; }
+  .tdl-tc-logo { width: 52px; height: 52px; }
+}

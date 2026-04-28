@@ -39,8 +39,8 @@ function stm_course_archive_shortcode( $atts ) {
             'show_all_tab'       => 'true',
             'show_demo_panel'    => 'true',
             'demo_limit'         => 8,
-            'demo_title'         => 'New Demo',
-            'demo_button_label'  => 'New Demo',
+            'demo_title'         => 'Watch Library Demo',
+            'demo_button_label'  => 'Upload Demo',
         ),
         $atts,
         'stm_tutor_courses'
@@ -147,8 +147,8 @@ function stm_get_archive_context( $args = array() ) {
         'show_all_tab'       => true,
         'show_demo_panel'    => true,
         'demo_limit'         => 8,
-        'demo_title'         => 'New Demo',
-        'demo_button_label'  => 'New Demo',
+        'demo_title'         => 'Watch Library Demo',
+        'demo_button_label'  => 'Upload Demo',
     );
 
     $args = wp_parse_args( $args, $defaults );
@@ -203,18 +203,19 @@ function stm_get_demo_panel_markup( $args = array() ) {
     $context     = stm_get_archive_context( $args );
     $demo_posts  = stm_get_demo_posts( $context['demo_limit'] );
     $can_upload  = stm_user_can_manage_demos();
-    $panel_title = '' !== $context['demo_title'] ? $context['demo_title'] : 'New Demo';
-    $button_text = '' !== $context['demo_button_label'] ? $context['demo_button_label'] : 'New Demo';
+    $panel_title = '' !== $context['demo_title'] ? $context['demo_title'] : 'Watch Library Demo';
+    $button_text = '' !== $context['demo_button_label'] ? $context['demo_button_label'] : 'Upload Demo';
 
     ob_start();
     ?>
     <aside class="stm-demo-sidebar">
-      <?php if ( $can_upload ) : ?>
-        <a href="#" class="tdl-dashboard-upload-btn stm-demo-sidebar-button"><?php echo esc_html( $button_text ); ?></a>
-      <?php endif; ?>
-
       <div class="stm-demo-panel">
-        <h3 class="stm-demo-panel-title"><?php echo esc_html( $panel_title ); ?></h3>
+        <div class="stm-demo-panel-header">
+          <h3 class="stm-demo-panel-title"><?php echo esc_html( $panel_title ); ?></h3>
+          <?php if ( $can_upload ) : ?>
+            <a href="#" class="tdl-dashboard-upload-btn stm-demo-sidebar-button"><?php echo esc_html( $button_text ); ?></a>
+          <?php endif; ?>
+        </div>
         <?php if ( ! empty( $demo_posts ) ) : ?>
           <ol class="stm-demo-list">
             <?php foreach ( $demo_posts as $demo_post ) : ?>
@@ -266,6 +267,7 @@ function stm_is_course_new( $post_id ) {
 }
 
 function stm_get_new_course_counts_by_category( $args = array() ) {
+    $categories = stm_get_filtered_categories( $args );
     $query_args = stm_get_course_query_args( 0, $args );
     $query_args['posts_per_page'] = -1;
     $query_args['fields']         = 'ids';
@@ -277,6 +279,12 @@ function stm_get_new_course_counts_by_category( $args = array() ) {
         0 => count( $course_ids ),
     );
 
+    if ( ! is_wp_error( $categories ) ) {
+        foreach ( $categories as $category ) {
+            $counts[ $category->term_id ] = 0;
+        }
+    }
+
     foreach ( $course_ids as $course_id ) {
         $terms = get_the_terms( $course_id, 'course-category' );
 
@@ -284,12 +292,79 @@ function stm_get_new_course_counts_by_category( $args = array() ) {
             continue;
         }
 
-        foreach ( $terms as $term ) {
-            if ( ! isset( $counts[ $term->term_id ] ) ) {
-                $counts[ $term->term_id ] = 0;
-            }
+        $counted_terms = array();
 
-            $counts[ $term->term_id ]++;
+        foreach ( $terms as $term ) {
+            $term_ids = array_merge(
+                array( $term->term_id ),
+                get_ancestors( $term->term_id, 'course-category', 'taxonomy' )
+            );
+
+            foreach ( $term_ids as $term_id ) {
+                $term_id = absint( $term_id );
+
+                if ( isset( $counted_terms[ $term_id ] ) ) {
+                    continue;
+                }
+
+                if ( ! isset( $counts[ $term_id ] ) ) {
+                    $counts[ $term_id ] = 0;
+                }
+
+                $counts[ $term_id ]++;
+                $counted_terms[ $term_id ] = true;
+            }
+        }
+    }
+
+    return $counts;
+}
+
+function stm_get_course_counts_by_category( $args = array() ) {
+    $categories = stm_get_filtered_categories( $args );
+    $counts     = array( 0 => 0 );
+
+    if ( is_wp_error( $categories ) ) {
+        return $counts;
+    }
+
+    foreach ( $categories as $category ) {
+        $counts[ $category->term_id ] = 0;
+    }
+
+    $query_args = stm_get_course_query_args( 0, $args );
+    $query_args['posts_per_page'] = -1;
+    $query_args['fields']         = 'ids';
+    $query_args['no_found_rows']  = true;
+
+    $course_ids = get_posts( $query_args );
+    $counts[0]  = count( $course_ids );
+
+    foreach ( $course_ids as $course_id ) {
+        $terms = get_the_terms( $course_id, 'course-category' );
+
+        if ( is_wp_error( $terms ) || empty( $terms ) ) {
+            continue;
+        }
+
+        $counted_terms = array();
+
+        foreach ( $terms as $term ) {
+            $term_ids = array_merge(
+                array( $term->term_id ),
+                get_ancestors( $term->term_id, 'course-category', 'taxonomy' )
+            );
+
+            foreach ( $term_ids as $term_id ) {
+                $term_id = absint( $term_id );
+
+                if ( ! isset( $counts[ $term_id ] ) || isset( $counted_terms[ $term_id ] ) ) {
+                    continue;
+                }
+
+                $counts[ $term_id ]++;
+                $counted_terms[ $term_id ] = true;
+            }
         }
     }
 
@@ -444,9 +519,11 @@ function stm_get_selected_new_course_count( $selected_cat_id, $args = array() ) 
 function stm_get_course_archive_markup( $args = array() ) {
     $context            = stm_get_archive_context( $args );
     $categories         = stm_get_filtered_categories( $context );
+    $course_counts      = stm_get_course_counts_by_category( $context );
     $new_course_counts  = stm_get_new_course_counts_by_category( $context );
     $initial_category   = 0;
     $display_title      = $context['title'];
+    $mobile_filter_id   = wp_unique_id( 'stm-cat-select-' );
 
     if ( ! $context['show_all_tab'] && ! is_wp_error( $categories ) && ! empty( $categories ) ) {
         $initial_category = (int) $categories[0]->term_id;
@@ -466,17 +543,40 @@ function stm_get_course_archive_markup( $args = array() ) {
       <div class="stm-archive-wrap">
         <aside class="stm-cat-sidebar">
           <h3 class="stm-sidebar-title">Categories</h3>
+          <div class="stm-cat-mobile-filter">
+            <label class="stm-cat-mobile-label" for="<?php echo esc_attr( $mobile_filter_id ); ?>">Filter by category</label>
+            <select class="stm-cat-select" id="<?php echo esc_attr( $mobile_filter_id ); ?>">
+              <?php if ( $context['show_all_tab'] ) : ?>
+                <option value="0" selected>
+                  <?php echo esc_html( sprintf( 'All courses (%d)', absint( $course_counts[0] ) ) ); ?>
+                </option>
+              <?php endif; ?>
+
+              <?php if ( ! is_wp_error( $categories ) && ! empty( $categories ) ) : ?>
+                <?php foreach ( $categories as $stm_index => $stm_cat ) : ?>
+                  <option value="<?php echo esc_attr( $stm_cat->term_id ); ?>" <?php selected( ! $context['show_all_tab'] && 0 === $stm_index ); ?>>
+                    <?php echo esc_html( sprintf( '%s (%d)', $stm_cat->name, absint( $course_counts[ $stm_cat->term_id ] ) ) ); ?>
+                  </option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
+          </div>
           <ul class="stm-cat-list">
             <?php if ( $context['show_all_tab'] ) : ?>
               <li class="stm-cat-item">
                 <a href="#" class="stm-cat-link active" data-cat-id="0">
                   <span class="stm-cat-name-wrap">
-                    <span class="stm-cat-name">All courses</span>
+                    <span class="stm-cat-name-row">
+                      <span class="stm-cat-name">All courses</span>
+                      <?php if ( ! empty( $new_course_counts[0] ) ) : ?>
+                        <span class="stm-cat-new-pill"><?php echo esc_html( 'New (' . absint( $new_course_counts[0] ) . ')' ); ?></span>
+                      <?php endif; ?>
+                    </span>
                     <?php if ( ! empty( $new_course_counts[0] ) ) : ?>
-                      <span class="stm-cat-new-count"><?php echo absint( $new_course_counts[0] ); ?> new this month</span>
+                      <span class="stm-cat-new-count">Just added</span>
                     <?php endif; ?>
                   </span>
-                  <span class="stm-cat-count"><?php echo absint( $courses['count'] ); ?></span>
+                  <span class="stm-cat-count"><?php echo absint( $course_counts[0] ); ?></span>
                 </a>
               </li>
             <?php endif; ?>
@@ -488,12 +588,17 @@ function stm_get_course_archive_markup( $args = array() ) {
                      class="stm-cat-link <?php echo ! $context['show_all_tab'] && 0 === $stm_index ? 'active' : ''; ?>"
                      data-cat-id="<?php echo esc_attr( $stm_cat->term_id ); ?>">
                     <span class="stm-cat-name-wrap">
-                      <span class="stm-cat-name"><?php echo esc_html( $stm_cat->name ); ?></span>
+                      <span class="stm-cat-name-row">
+                        <span class="stm-cat-name"><?php echo esc_html( $stm_cat->name ); ?></span>
+                        <?php if ( ! empty( $new_course_counts[ $stm_cat->term_id ] ) ) : ?>
+                          <span class="stm-cat-new-pill"><?php echo esc_html( 'New (' . absint( $new_course_counts[ $stm_cat->term_id ] ) . ')' ); ?></span>
+                        <?php endif; ?>
+                      </span>
                       <?php if ( ! empty( $new_course_counts[ $stm_cat->term_id ] ) ) : ?>
-                        <span class="stm-cat-new-count"><?php echo absint( $new_course_counts[ $stm_cat->term_id ] ); ?> new this month</span>
+                        <span class="stm-cat-new-count">Just added</span>
                       <?php endif; ?>
                     </span>
-                    <span class="stm-cat-count"><?php echo absint( $stm_cat->count ); ?></span>
+                    <span class="stm-cat-count"><?php echo absint( $course_counts[ $stm_cat->term_id ] ); ?></span>
                   </a>
                 </li>
               <?php endforeach; ?>
@@ -503,11 +608,16 @@ function stm_get_course_archive_markup( $args = array() ) {
 
         <main class="stm-course-main">
           <div class="stm-main-header">
-            <h2 class="stm-main-title"><?php echo esc_html( $display_title ); ?></h2>
+            <div class="stm-main-heading">
+              <h2 class="stm-main-title"><?php echo esc_html( $display_title ); ?></h2>
+              <?php if ( ! empty( $new_course_counts[ $initial_category ] ) ) : ?>
+                <span class="stm-main-new-pill"><?php echo esc_html( 'New (' . absint( $new_course_counts[ $initial_category ] ) . ')' ); ?></span>
+              <?php endif; ?>
+            </div>
             <span class="stm-result-count">
               <?php echo esc_html( stm_get_result_count_label( $courses['count'] ) ); ?>
               <?php if ( ! empty( $new_course_counts[ $initial_category ] ) ) : ?>
-                <span class="stm-result-new-count"><?php echo esc_html( absint( $new_course_counts[ $initial_category ] ) . ' new this month' ); ?></span>
+                <span class="stm-result-new-count"><?php echo esc_html( sprintf( 'Just added: %d', absint( $new_course_counts[ $initial_category ] ) ) ); ?></span>
               <?php endif; ?>
             </span>
           </div>
@@ -560,7 +670,7 @@ function stm_filter_courses_callback() {
             'count'            => $courses['count'],
             'count_label'      => stm_get_result_count_label( $courses['count'] ),
             'new_count'        => $new_count,
-            'new_count_label'  => $new_count > 0 ? sprintf( '%d new this month', $new_count ) : '',
+            'new_count_label'  => $new_count > 0 ? sprintf( 'Just added: %d', absint( $new_count ) ) : '',
         )
     );
 }

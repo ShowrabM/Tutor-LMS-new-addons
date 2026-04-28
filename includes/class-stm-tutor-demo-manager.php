@@ -185,7 +185,7 @@ class STM_Tutor_Demo_Manager {
             <div class="tdl-msg">Demo saved successfully.</div>
         <?php endif; ?>
 
-        echo $this->get_upload_form_markup();
+        <?php echo $this->get_upload_form_markup(); ?>
         <?php
 
         return ob_get_clean();
@@ -370,6 +370,58 @@ class STM_Tutor_Demo_Manager {
                 <button type="submit" name="tdl_save" class="tdl-btn">Save Demo</button>
             </div>
         </form>
+        <?php echo $this->get_my_demos_markup(); ?>
+        <?php
+
+        return ob_get_clean();
+    }
+
+    private function get_my_demos_markup() {
+        $posts = get_posts(
+            array(
+                'post_type'      => self::POST_TYPE,
+                'post_status'    => 'publish',
+                'posts_per_page' => -1,
+                'author'         => get_current_user_id(),
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            )
+        );
+
+        if ( empty( $posts ) ) {
+            return '';
+        }
+
+        ob_start();
+        ?>
+        <h3 class="tdl-list-title">My Demos</h3>
+        <table class="tdl-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Type</th>
+                    <th>Date</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ( $posts as $post ) : ?>
+                    <?php
+                    $type       = get_post_meta( $post->ID, '_tdl_demo_type', true );
+                    $delete_url = wp_nonce_url(
+                        add_query_arg( 'tdl_delete', $post->ID, $this->get_current_url() ),
+                        'tdl_delete_demo_' . $post->ID
+                    );
+                    ?>
+                    <tr>
+                        <td><?php echo esc_html( $post->post_title ); ?></td>
+                        <td><span class="tdl-type-badge"><?php echo esc_html( $type ); ?></span></td>
+                        <td><?php echo esc_html( get_the_date( '', $post ) ); ?></td>
+                        <td><a class="tdl-table-delete" href="<?php echo esc_url( $delete_url ); ?>" data-tdl-delete="1">Delete</a></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
         <?php
 
         return ob_get_clean();

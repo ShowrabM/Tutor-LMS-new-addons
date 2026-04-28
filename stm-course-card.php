@@ -28,7 +28,7 @@ if ( function_exists( 'tutor_utils' ) ) {
         <div class="stm-card-thumb">
             <?php if ( $stm_thumb ) : ?>
                 <?php if ( $stm_is_new ) : ?>
-                    <span class="stm-card-badge-new">New This Month</span>
+                    <span class="stm-card-badge-new">Just Added</span>
                 <?php endif; ?>
                 <img src="<?php echo esc_url( $stm_thumb ); ?>"
                      alt="<?php echo esc_attr( $stm_title ); ?>"
@@ -36,7 +36,7 @@ if ( function_exists( 'tutor_utils' ) ) {
             <?php else : ?>
                 <div class="stm-thumb-placeholder">
                     <?php if ( $stm_is_new ) : ?>
-                        <span class="stm-card-badge-new">New This Month</span>
+                        <span class="stm-card-badge-new">Just Added</span>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>
