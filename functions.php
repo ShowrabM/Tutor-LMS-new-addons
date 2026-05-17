@@ -86,6 +86,38 @@ function stm_enqueue_course_assets() {
     $assets_enqueued = true;
 }
 
+add_filter( 'tutor_dashboard/bottom_nav_items', 'stm_add_fluentaffiliate_dashboard_nav_item' );
+function stm_add_fluentaffiliate_dashboard_nav_item( $nav_items ) {
+    if ( ! defined( 'FLUENT_AFFILIATE_VERSION' ) ) {
+        return $nav_items;
+    }
+
+    $affiliate_nav_item = array(
+        'title'    => 'FluentAffiliate',
+        'icon'     => 'tutor-icon-user-bold',
+        'url'      => admin_url( 'admin.php?page=fluent-affiliate#/affiliates' ),
+        'auth_cap' => 'manage_options',
+    );
+
+    $updated_nav_items = array();
+    $item_added        = false;
+
+    foreach ( $nav_items as $key => $nav_item ) {
+        if ( ! $item_added && 'separator-2' === $key ) {
+            $updated_nav_items['stm-fluentaffiliate'] = $affiliate_nav_item;
+            $item_added                               = true;
+        }
+
+        $updated_nav_items[ $key ] = $nav_item;
+    }
+
+    if ( ! $item_added ) {
+        $updated_nav_items['stm-fluentaffiliate'] = $affiliate_nav_item;
+    }
+
+    return $updated_nav_items;
+}
+
 function stm_should_load_course_assets() {
     if ( is_admin() ) {
         return false;

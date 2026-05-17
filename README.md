@@ -2,6 +2,16 @@
 
 Custom Tutor LMS components for course archive filtering, demo uploads, and testimonial management.
 
+## Google Search Console dashboard link
+
+Go to **Settings > GSC Dashboard** and paste your Google Search Console URL. Enable the option to show a one-click GSC shortcut in the WordPress dashboard widget and on the Tutor dashboard for allowed users.
+
+You can also place the link manually with:
+
+```text
+[stm_gsc_dashboard_link]
+```
+
 ## Shortcodes
 
 ### Course archive
