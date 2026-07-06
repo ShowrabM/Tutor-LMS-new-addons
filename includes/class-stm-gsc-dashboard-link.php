@@ -193,6 +193,7 @@ class STM_GSC_Dashboard_Link {
                 'url'          => esc_url( $options['gsc_url'] ),
                 'buttonLabel'  => $options['button_label'],
                 'accountLabel' => $options['account_label'],
+                'isInstructor' => function_exists( 'stm_is_current_user_instructor' ) && stm_is_current_user_instructor(),
             )
         );
     }

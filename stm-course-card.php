@@ -16,11 +16,9 @@ if ( function_exists( 'tutor_utils' ) ) {
     $stm_lesson_count = tutor_utils()->get_lesson_count_by_course( $stm_post_id );
 }
 
-$stm_price = '';
-if ( function_exists( 'tutor_utils' ) ) {
-    $stm_raw_price = tutor_utils()->get_course_price( $stm_post_id );
-    $stm_price     = $stm_raw_price ? trim( wp_strip_all_tags( $stm_raw_price ) ) : 'Free';
-}
+$stm_pmpro_access = function_exists( 'stm_user_has_pmpro_course_access' ) && stm_user_has_pmpro_course_access( $stm_post_id );
+$stm_has_access   = $stm_pmpro_access || ( function_exists( 'stm_user_has_course_access' ) && stm_user_has_course_access( $stm_post_id ) );
+$stm_price        = $stm_pmpro_access ? 'Already Subscribed' : ( $stm_has_access ? 'Enrolled' : 'Buy Membership' );
 ?>
 
 <div class="stm-course-card">
@@ -56,7 +54,7 @@ if ( function_exists( 'tutor_utils' ) ) {
             <?php endif; ?>
 
             <div class="stm-price-btn-wrap">
-                <span class="stm-price-btn"><?php echo esc_html( $stm_price ); ?></span>
+                <span class="stm-price-btn<?php echo $stm_has_access ? ' is-enrolled' : ''; ?>"><?php echo esc_html( $stm_price ); ?></span>
             </div>
         </div>
     </a>

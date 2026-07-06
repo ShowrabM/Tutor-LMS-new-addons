@@ -2,7 +2,7 @@
 /*
 Plugin Name: Tutor LMS Customization
 Description: Custom Tutor LMS course archive, demo management, and testimonial features.
-Version: 1.2.0
+Version: 1.2.6
 Author: Showrab Mojumdar
 Author URI: https://www.banglayseo.com
 Plugin URI: https://github.com/showrabm
@@ -17,7 +17,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
-define( 'STM_TUTOR_CUSTOMIZATION_VERSION', '1.2.0' );
+define( 'STM_TUTOR_CUSTOMIZATION_VERSION', '1.2.6' );
 define( 'STM_TUTOR_CUSTOMIZATION_DIR', plugin_dir_path( __FILE__ ) );
 define( 'STM_TUTOR_CUSTOMIZATION_URL', plugin_dir_url( __FILE__ ) );
 

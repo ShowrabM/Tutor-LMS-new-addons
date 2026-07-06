@@ -3,6 +3,256 @@ if ( ! defined( 'ABSPATH' ) ) {
     exit;
 }
 
+add_action( 'tutor_dashboard_my_courses_filter', 'stm_render_dashboard_course_search' );
+add_action( 'wp_enqueue_scripts', 'stm_enqueue_dashboard_course_search_assets', 101 );
+add_action( 'wp_ajax_stm_instructor_course_suggestions', 'stm_instructor_course_suggestions' );
+add_filter( 'tutor_get_template_path', 'stm_override_tutor_dashboard_my_courses_template', 20, 2 );
+
+function stm_is_tutor_dashboard_page() {
+    if ( function_exists( 'tutor_utils' ) && method_exists( tutor_utils(), 'is_tutor_frontend_dashboard' ) && tutor_utils()->is_tutor_frontend_dashboard() ) {
+        return true;
+    }
+
+    if ( function_exists( 'tutor_utils' ) && method_exists( tutor_utils(), 'is_tutor_dashboard' ) && tutor_utils()->is_tutor_dashboard() ) {
+        return true;
+    }
+
+    return has_shortcode( (string) get_post_field( 'post_content', get_the_ID() ), 'tutor_dashboard' );
+}
+
+/**
+ * Whether the current user is an approved Tutor LMS instructor.
+ */
+function stm_is_current_user_instructor() {
+    if ( ! is_user_logged_in() || ! function_exists( 'tutor_utils' ) ) {
+        return false;
+    }
+
+    $can_create_courses = function_exists( 'tutor' ) && current_user_can( tutor()->instructor_role );
+
+    return $can_create_courses || current_user_can( 'manage_options' ) || (bool) tutor_utils()->is_instructor( get_current_user_id(), true );
+}
+
+function stm_enqueue_dashboard_course_search_assets() {
+    if ( is_admin() || ! stm_is_tutor_dashboard_page() || ! stm_is_current_user_instructor() ) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'stm-tutor-dashboard-search',
+        STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-tutor-dashboard-search.css',
+        array(),
+        STM_TUTOR_CUSTOMIZATION_VERSION
+    );
+
+    wp_enqueue_script(
+        'stm-tutor-dashboard-search',
+        STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-tutor-dashboard-search.js',
+        array( 'jquery' ),
+        STM_TUTOR_CUSTOMIZATION_VERSION,
+        true
+    );
+
+    wp_localize_script(
+        'stm-tutor-dashboard-search',
+        'stmTutorDashboardSearch',
+        array(
+            'showHeaderSearch' => true,
+            'myCoursesUrl'    => tutor_utils()->get_tutor_dashboard_page_permalink( 'my-courses' ),
+            'searchParam'     => 'stm_course_search',
+            'ajaxUrl'         => admin_url( 'admin-ajax.php' ),
+            'nonce'           => wp_create_nonce( 'stm_instructor_course_search' ),
+        )
+    );
+}
+
+/**
+ * Return live course-title suggestions owned or co-authored by this instructor.
+ */
+function stm_instructor_course_suggestions() {
+    check_ajax_referer( 'stm_instructor_course_search', 'nonce' );
+
+    if ( ! stm_is_current_user_instructor() || ! class_exists( '\\Tutor\\Models\\CourseModel' ) ) {
+        wp_send_json_error( array( 'message' => 'You are not allowed to search instructor courses.' ), 403 );
+    }
+
+    $query = isset( $_GET['query'] ) ? sanitize_text_field( wp_unslash( $_GET['query'] ) ) : '';
+    if ( strlen( $query ) < 2 ) {
+        wp_send_json_success( array() );
+    }
+
+    if ( current_user_can( 'manage_options' ) ) {
+        $courses = get_posts(
+            array(
+                'post_type'      => tutor()->course_post_type,
+                'post_status'    => array( 'publish', 'pending', 'draft', 'future' ),
+                'posts_per_page' => 8,
+                's'              => $query,
+                'orderby'        => 'date',
+                'order'          => 'DESC',
+            )
+        );
+    } else {
+        $courses = \Tutor\Models\CourseModel::get_courses_by_instructor(
+            get_current_user_id(),
+            array( 'publish', 'pending', 'draft', 'future' ),
+            0,
+            PHP_INT_MAX,
+            false,
+            array( tutor()->course_post_type )
+        );
+    }
+    $suggestions = array();
+
+    foreach ( (array) $courses as $course ) {
+        if ( ! current_user_can( 'manage_options' ) && false === stripos( $course->post_title, $query ) ) {
+            continue;
+        }
+
+        $suggestions[] = array(
+            'title'  => $course->post_title,
+            'status' => ucfirst( $course->post_status ),
+            'url'    => tutor_utils()->course_edit_link( $course->ID, tutor()->has_pro ? 'frontend' : 'backend' ),
+        );
+
+        if ( 8 <= count( $suggestions ) ) {
+            break;
+        }
+    }
+
+    wp_send_json_success( $suggestions );
+}
+
+function stm_render_dashboard_course_search() {
+    if ( ! stm_is_tutor_dashboard_page() || ! stm_is_current_user_instructor() ) {
+        return;
+    }
+    $search_value = isset( $_GET['stm_course_search'] )
+        ? sanitize_text_field( wp_unslash( $_GET['stm_course_search'] ) )
+        : '';
+    ?>
+    <div class="stm-tutor-course-search-wrap">
+        <label class="stm-tutor-course-search-label" for="stm-tutor-course-search">Search courses</label>
+        <input type="search" id="stm-tutor-course-search" class="stm-tutor-course-search" placeholder="Search courses" value="<?php echo esc_attr( $search_value ); ?>" autocomplete="off" />
+    </div>
+    <?php
+}
+
+/**
+ * Check whether an active Paid Memberships Pro level covers a course.
+ * Supports Tutor's full-site model and PMPro category selections.
+ */
+function stm_user_has_pmpro_course_access( $course_id, $user_id = 0 ) {
+    if ( ! function_exists( 'pmpro_getMembershipLevelsForUser' ) || ! function_exists( 'pmpro_getMembershipCategories' ) ) {
+        return false;
+    }
+
+    $user_id   = $user_id ? absint( $user_id ) : get_current_user_id();
+    $course_id = absint( $course_id );
+    $levels    = pmpro_getMembershipLevelsForUser( $user_id );
+
+    if ( ! $user_id || ! is_array( $levels ) || empty( $levels ) ) {
+        return false;
+    }
+
+    $course_category_ids = wp_get_post_terms( $course_id, 'course-category', array( 'fields' => 'ids' ) );
+    if ( is_wp_error( $course_category_ids ) ) {
+        $course_category_ids = array();
+    }
+
+    // A parent category selected in PMPro should also cover courses in its children.
+    foreach ( $course_category_ids as $category_id ) {
+        $course_category_ids = array_merge(
+            $course_category_ids,
+            get_ancestors( $category_id, 'course-category', 'taxonomy' )
+        );
+    }
+    $course_category_ids = array_unique( array_map( 'absint', $course_category_ids ) );
+
+    foreach ( $levels as $level ) {
+        $level_id = isset( $level->id ) ? absint( $level->id ) : ( isset( $level->ID ) ? absint( $level->ID ) : 0 );
+        if ( ! $level_id ) {
+            continue;
+        }
+
+        $membership_model = function_exists( 'get_pmpro_membership_level_meta' )
+            ? get_pmpro_membership_level_meta( $level_id, 'tutor_pmpro_membership_model', true )
+            : '';
+
+        if ( 'full_website_membership' === $membership_model ) {
+            return true;
+        }
+
+        $membership_category_ids = array_map( 'absint', (array) pmpro_getMembershipCategories( $level_id ) );
+        if ( array_intersect( $course_category_ids, $membership_category_ids ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
+ * Treat active membership access as enrolled for the custom course archive.
+ * Tutor creates the course enrollment when the member opens/enrolls in a course.
+ */
+function stm_user_has_course_access( $course_id, $user_id = 0 ) {
+    if ( ! is_user_logged_in() || ! function_exists( 'tutor_utils' ) ) {
+        return false;
+    }
+
+    $user_id = $user_id ? absint( $user_id ) : get_current_user_id();
+    $course_id = absint( $course_id );
+
+    if ( tutor_utils()->is_enrolled( $course_id, $user_id ) ) {
+        return true;
+    }
+
+    if ( stm_user_has_pmpro_course_access( $course_id, $user_id ) ) {
+        return true;
+    }
+
+    // Tutor LMS Pro's native subscription/membership system.
+    if ( class_exists( '\\TutorPro\\Subscription\\Models\\SubscriptionModel' ) ) {
+        try {
+            $subscription_model = new \TutorPro\Subscription\Models\SubscriptionModel();
+            if ( $subscription_model->has_course_access( $course_id, $user_id ) ) {
+                return true;
+            }
+        } catch ( Throwable $exception ) {
+            // Keep the archive available if the subscription add-on is disabled/misconfigured.
+        }
+    }
+
+    // Final compatibility fallback for older versions of Tutor's PMPro integration.
+    if ( 'pmpro' === tutor_utils()->get_option( 'monetize_by' ) ) {
+        $previous_post = isset( $GLOBALS['post'] ) ? $GLOBALS['post'] : null;
+        $GLOBALS['post'] = get_post( $course_id );
+        $access_label = apply_filters( 'tutor-loop-default-price', '' );
+        $GLOBALS['post'] = $previous_post;
+
+        if ( '' !== trim( wp_strip_all_tags( (string) $access_label ) ) ) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function stm_override_tutor_dashboard_my_courses_template( $template_location, $template ) {
+    if ( 'dashboard/my-courses' !== $template ) {
+        return $template_location;
+    }
+
+    $override = STM_TUTOR_CUSTOMIZATION_DIR . 'templates/dashboard/my-courses.php';
+
+    if ( file_exists( $override ) ) {
+        return $override;
+    }
+
+    return $template_location;
+}
+
 add_filter( 'theme_page_templates', 'stm_register_course_archive_template' );
 function stm_register_course_archive_template( $templates ) {
     $templates['stm-course-archive.php'] = 'Tutor LMS Customization';
@@ -93,7 +343,7 @@ function stm_add_fluentaffiliate_dashboard_nav_item( $nav_items ) {
     }
 
     $affiliate_nav_item = array(
-        'title'    => 'FluentAffiliate',
+        'title'    => 'Affiliate approval',
         'icon'     => 'tutor-icon-user-bold',
         'url'      => admin_url( 'admin.php?page=fluent-affiliate#/affiliates' ),
         'auth_cap' => 'manage_options',
@@ -176,6 +426,7 @@ function stm_get_archive_context( $args = array() ) {
         'title'              => 'All courses',
         'include_categories' => array(),
         'exclude_categories' => array(),
+        'search'             => '',
         'show_all_tab'       => true,
         'show_demo_panel'    => true,
         'demo_limit'         => 8,
@@ -190,6 +441,7 @@ function stm_get_archive_context( $args = array() ) {
         'title'              => sanitize_text_field( $args['title'] ),
         'include_categories' => stm_parse_term_ids( $args['include_categories'] ),
         'exclude_categories' => stm_parse_term_ids( $args['exclude_categories'] ),
+        'search'             => sanitize_text_field( $args['search'] ),
         'show_all_tab'       => stm_to_bool( $args['show_all_tab'] ),
         'show_demo_panel'    => stm_to_bool( $args['show_demo_panel'] ),
         'demo_limit'         => max( 1, absint( $args['demo_limit'] ) ),
@@ -472,6 +724,10 @@ function stm_get_course_query_args( $selected_cat_id = 0, $args = array() ) {
         'order'          => 'DESC',
     );
 
+    if ( ! empty( $context['search'] ) ) {
+        $stm_args['s'] = $context['search'];
+    }
+
     $tax_query = stm_build_category_tax_query(
         $selected_cat_id,
         $context['include_categories'],
@@ -556,6 +812,8 @@ function stm_get_course_archive_markup( $args = array() ) {
     $initial_category   = 0;
     $display_title      = $context['title'];
     $mobile_filter_id   = wp_unique_id( 'stm-cat-select-' );
+    $search_id          = wp_unique_id( 'stm-course-search-' );
+    $search_value       = isset( $context['search'] ) ? $context['search'] : '';
 
     if ( ! $context['show_all_tab'] && ! is_wp_error( $categories ) && ! empty( $categories ) ) {
         $initial_category = (int) $categories[0]->term_id;
@@ -646,12 +904,23 @@ function stm_get_course_archive_markup( $args = array() ) {
                 <span class="stm-main-new-pill"><?php echo esc_html( 'New (' . absint( $new_course_counts[ $initial_category ] ) . ')' ); ?></span>
               <?php endif; ?>
             </div>
-            <span class="stm-result-count">
-              <?php echo esc_html( stm_get_result_count_label( $courses['count'] ) ); ?>
-              <?php if ( ! empty( $new_course_counts[ $initial_category ] ) ) : ?>
-                <span class="stm-result-new-count"><?php echo esc_html( sprintf( 'Just added: %d', absint( $new_course_counts[ $initial_category ] ) ) ); ?></span>
-              <?php endif; ?>
-            </span>
+            <div class="stm-main-tools">
+              <label class="stm-course-search" for="<?php echo esc_attr( $search_id ); ?>">
+                <span class="screen-reader-text">Search courses</span>
+                <input type="search"
+                       id="<?php echo esc_attr( $search_id ); ?>"
+                       class="stm-course-search-input"
+                       placeholder="Search courses"
+                       value="<?php echo esc_attr( $search_value ); ?>"
+                       autocomplete="off" />
+              </label>
+              <span class="stm-result-count">
+                <?php echo esc_html( stm_get_result_count_label( $courses['count'] ) ); ?>
+                <?php if ( ! empty( $new_course_counts[ $initial_category ] ) ) : ?>
+                  <span class="stm-result-new-count"><?php echo esc_html( sprintf( 'Just added: %d', absint( $new_course_counts[ $initial_category ] ) ) ); ?></span>
+                <?php endif; ?>
+              </span>
+            </div>
           </div>
 
           <div class="stm-course-grid"><?php echo $courses['html']; ?></div>
@@ -690,6 +959,7 @@ function stm_filter_courses_callback() {
         'posts_per_page'     => isset( $_POST['posts_per_page'] ) ? wp_unslash( $_POST['posts_per_page'] ) : -1,
         'include_categories' => isset( $_POST['include_categories'] ) ? wp_unslash( $_POST['include_categories'] ) : '',
         'exclude_categories' => isset( $_POST['exclude_categories'] ) ? wp_unslash( $_POST['exclude_categories'] ) : '',
+        'search'             => isset( $_POST['search'] ) ? sanitize_text_field( wp_unslash( $_POST['search'] ) ) : '',
     );
 
     $selected_cat_id = isset( $_POST['category_id'] ) ? sanitize_text_field( wp_unslash( $_POST['category_id'] ) ) : '0';

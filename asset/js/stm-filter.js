@@ -36,6 +36,7 @@
   }
 
   function initArchive($archive) {
+    $archive.data('searchTimer', null);
     syncMobileFilter($archive);
   }
 
@@ -60,6 +61,7 @@
     var includeCategories = $archive.data('include-categories');
     var excludeCategories = $archive.data('exclude-categories');
     var defaultTitle = $archive.data('default-title');
+    var search = $archive.find('.stm-course-search-input').val() || '';
 
     $archive.find('.stm-main-title').text(getArchiveTitle(catId, catName, defaultTitle));
     $grid.css({ opacity: 0.4, pointerEvents: 'none' });
@@ -73,7 +75,8 @@
         category_id: catId,
         posts_per_page: postsPerPage,
         include_categories: includeCategories,
-        exclude_categories: excludeCategories
+        exclude_categories: excludeCategories,
+        search: search
       },
       success: function(res) {
         if (res.success) {
@@ -96,6 +99,25 @@
   $(document).ready(function() {
     $('.stm-course-archive').each(function() {
       initArchive($(this));
+    });
+
+    $(document).on('input', '.stm-course-archive .stm-course-search-input', function() {
+      var $input = $(this);
+      var $archive = $input.closest('.stm-course-archive');
+      var $active = $archive.find('.stm-cat-link.active');
+      var catId = $active.data('cat-id');
+      var catName = $active.find('.stm-cat-name').text().trim();
+      var searchTimer = $archive.data('searchTimer');
+
+      if (searchTimer) {
+        window.clearTimeout(searchTimer);
+      }
+
+      searchTimer = window.setTimeout(function() {
+        filterArchive($archive, catId, catName);
+      }, 250);
+
+      $archive.data('searchTimer', searchTimer);
     });
 
     $(document).on('change', '.stm-course-archive .stm-cat-select', function() {

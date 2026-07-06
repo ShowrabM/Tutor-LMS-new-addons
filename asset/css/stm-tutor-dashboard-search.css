@@ -1,0 +1,205 @@
+.stm-tutor-course-search-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 18px;
+  max-width: 360px;
+}
+
+.stm-tutor-course-search-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.stm-tutor-course-search {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid #fdba74;
+  border-radius: 999px;
+  background: #fff;
+  color: #111827;
+  font-size: 14px;
+  box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.1);
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.stm-tutor-course-search:focus {
+  outline: none;
+  border-color: #f97316;
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.12);
+}
+
+.stm-tutor-course-search-empty {
+  margin: 0 0 16px;
+  color: #6b7280;
+  font-weight: 600;
+}
+
+.stm-dashboard-course-search-form {
+  position: relative;
+  display: inline-block;
+  margin-left: 10px;
+}
+
+.stm-dashboard-course-search-toggle {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 126px;
+  min-height: 62px;
+  padding: 8px 16px;
+  border-color: #3e64de;
+  border-radius: 7px;
+  color: #3e64de;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.stm-dashboard-course-search-toggle .tutor-icon-search {
+  font-size: 18px;
+}
+
+.stm-dashboard-course-search-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  z-index: 100;
+  display: none;
+  width: 390px;
+  padding: 14px;
+  border: 1px solid #dbe1f1;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(17, 24, 39, 0.16);
+}
+
+.stm-dashboard-course-search-form.is-open .stm-dashboard-course-search-panel {
+  display: block;
+}
+
+.stm-dashboard-course-search-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stm-dashboard-course-search-input {
+  width: 150px;
+  min-height: 44px;
+  flex: 1;
+  padding: 0 12px;
+  border: 1px solid #cfd6e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+}
+
+.stm-dashboard-course-search-input:focus {
+  outline: none;
+  border-color: #3e64de;
+  box-shadow: 0 0 0 3px rgba(62, 100, 222, 0.12);
+}
+
+.stm-dashboard-course-search-submit {
+  white-space: nowrap;
+}
+
+.stm-dashboard-course-suggestions {
+  display: none;
+  max-height: 300px;
+  margin-top: 10px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 7px;
+}
+
+.stm-dashboard-course-suggestions.is-visible {
+  display: block;
+}
+
+.stm-dashboard-course-suggestion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  border-bottom: 1px solid #eef0f5;
+  color: #252b42;
+  text-decoration: none;
+}
+
+.stm-dashboard-course-suggestion:last-child {
+  border-bottom: 0;
+}
+
+.stm-dashboard-course-suggestion:hover,
+.stm-dashboard-course-suggestion:focus {
+  background: #f3f6ff;
+  color: #3e64de;
+}
+
+.stm-dashboard-suggestion-title {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stm-dashboard-suggestion-status {
+  flex: 0 0 auto;
+  color: #7a7f8c;
+  font-size: 12px;
+}
+
+.stm-dashboard-suggestion-message {
+  padding: 12px;
+  color: #7a7f8c;
+  text-align: center;
+}
+
+@media (max-width: 767px) {
+  .stm-tutor-course-search-wrap {
+    max-width: none;
+  }
+
+  .stm-dashboard-course-search-form {
+    margin-left: 6px;
+  }
+
+  .stm-dashboard-course-search-panel {
+    position: fixed;
+    top: 90px;
+    right: 16px;
+    left: 16px;
+    width: auto;
+  }
+}
+
+/* Keep Tutor/theme form rules from changing the custom dashboard search. */
+.tutor-dashboard .stm-dashboard-course-search-form .stm-dashboard-course-search-toggle {
+  min-width: 126px;
+  min-height: 62px;
+  border: 1px solid #3e64de;
+  border-radius: 7px;
+  background: #fff;
+  color: #3e64de;
+}
+
+.tutor-dashboard .stm-dashboard-course-search-panel .stm-dashboard-course-search-input {
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid #cfd6e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #111827;
+  box-sizing: border-box;
+}
