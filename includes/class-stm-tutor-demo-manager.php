@@ -192,7 +192,7 @@ class STM_Tutor_Demo_Manager {
     }
 
     public function render_upload_modal() {
-        if ( ! $this->user_is_allowed() || $this->page_has_shortcode( 'tutor_demo_upload_form' ) ) {
+        if ( ! $this->user_is_allowed() ) {
             return;
         }
         ?>
@@ -202,9 +202,9 @@ class STM_Tutor_Demo_Manager {
                 <button type="button" class="tdl-modal-close" data-tdl-modal-close="1" aria-label="Close">x</button>
                 <h2 class="tdl-modal-title" id="tdl-upload-modal-title">Upload Demo</h2>
                 <?php if ( isset( $_GET['saved'] ) ) : ?>
-                    <div class="tdl-msg">Demo saved successfully.</div>
+                    <div class="tutor-alert tutor-alert-success tutor-mb-4">Demo saved successfully.</div>
                 <?php endif; ?>
-                <?php echo $this->get_upload_form_markup(); ?>
+                <?php echo $this->get_upload_form_markup( false ); ?>
             </div>
         </div>
         <?php
@@ -319,58 +319,60 @@ class STM_Tutor_Demo_Manager {
         echo '</div>';
     }
 
-    private function get_upload_form_markup() {
+    private function get_upload_form_markup( $include_table = true ) {
         ob_start();
         ?>
-        <form method="post" class="tdl-form" data-tdl-upload-form="1">
+        <form method="post" class="tdl-form tutor-mb-8" data-tdl-upload-form="1">
             <?php wp_nonce_field( 'tdl_save_demo', 'tdl_nonce' ); ?>
 
-            <div class="tdl-field">
-                <label for="tdl_demo_type">Demo Type</label>
-                <select name="tdl_demo_type" id="tdl_demo_type">
+            <div class="tdl-field tutor-mb-4">
+                <label for="tdl_demo_type" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Demo Type</label>
+                <select name="tdl_demo_type" id="tdl_demo_type" class="tutor-form-control">
                     <option value="video">Video</option>
                     <option value="pdf">PDF</option>
                     <option value="embed">Embedded Link (YouTube / Vimeo)</option>
                 </select>
             </div>
 
-            <div class="tdl-field">
-                <label for="tdl_demo_title">Title</label>
-                <input type="text" name="tdl_demo_title" id="tdl_demo_title" placeholder="Demo title" required>
+            <div class="tdl-field tutor-mb-4">
+                <label for="tdl_demo_title" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Title</label>
+                <input type="text" name="tdl_demo_title" id="tdl_demo_title" class="tutor-form-control" placeholder="Demo title" required>
             </div>
 
-            <div class="tdl-field">
-                <label for="tdl_demo_short_desc">Short Description</label>
-                <textarea name="tdl_demo_short_desc" id="tdl_demo_short_desc" maxlength="220" placeholder="Write a short description (max 220 chars)"></textarea>
+            <div class="tdl-field tutor-mb-4">
+                <label for="tdl_demo_short_desc" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Short Description</label>
+                <textarea name="tdl_demo_short_desc" id="tdl_demo_short_desc" class="tutor-form-control" maxlength="220" placeholder="Write a short description (max 220 chars)"></textarea>
             </div>
 
-            <div class="tdl-field">
-                <label for="tdl_demo_thumbnail">Thumbnail / Cover Image</label>
-                <div class="tdl-file-row">
-                    <input type="text" name="tdl_demo_thumbnail" id="tdl_demo_thumbnail" placeholder="Select or paste image URL">
-                    <button type="button" class="tdl-btn tdl-btn-secondary tdl-thumb-btn">Choose Image</button>
+            <div class="tdl-field tutor-mb-4">
+                <label for="tdl_demo_thumbnail" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Thumbnail / Cover Image</label>
+                <div class="tdl-file-row tutor-flex tutor-gap-2">
+                    <input type="text" name="tdl_demo_thumbnail" id="tdl_demo_thumbnail" class="tutor-form-control" placeholder="Select or paste image URL">
+                    <button type="button" class="tutor-btn tutor-btn-outline-primary tdl-thumb-btn">Choose Image</button>
                 </div>
                 <img id="tdl-thumb-preview" src="" alt="Thumbnail preview">
             </div>
 
-            <div class="tdl-field tdl-field-file">
-                <label for="tdl_demo_file">File URL</label>
-                <div class="tdl-file-row">
-                    <input type="text" name="tdl_demo_file" id="tdl_demo_file" placeholder="Select or paste file URL">
-                    <button type="button" class="tdl-btn tdl-btn-secondary tdl-upload-btn">Choose File</button>
+            <div class="tdl-field tdl-field-file tutor-mb-4">
+                <label for="tdl_demo_file" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">File URL</label>
+                <div class="tdl-file-row tutor-flex tutor-gap-2">
+                    <input type="text" name="tdl_demo_file" id="tdl_demo_file" class="tutor-form-control" placeholder="Select or paste file URL">
+                    <button type="button" class="tutor-btn tutor-btn-outline-primary tdl-upload-btn">Choose File</button>
                 </div>
             </div>
 
-            <div class="tdl-field tdl-field-embed" style="display:none;">
-                <label for="tdl_demo_embed">Embed URL</label>
-                <input type="url" name="tdl_demo_embed" id="tdl_demo_embed" placeholder="https://www.youtube.com/watch?v=...">
+            <div class="tdl-field tdl-field-embed tutor-mb-4" style="display:none;">
+                <label for="tdl_demo_embed" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Embed URL</label>
+                <input type="url" name="tdl_demo_embed" id="tdl_demo_embed" class="tutor-form-control" placeholder="https://www.youtube.com/watch?v=...">
             </div>
 
-            <div class="tdl-field">
-                <button type="submit" name="tdl_save" class="tdl-btn">Save Demo</button>
+            <div class="tdl-field tutor-mt-6">
+                <button type="submit" name="tdl_save" class="tutor-btn tutor-btn-primary">Save Demo</button>
             </div>
         </form>
-        <?php echo $this->get_my_demos_markup(); ?>
+        <?php if ( $include_table ) : ?>
+            <?php echo $this->get_my_demos_markup(); ?>
+        <?php endif; ?>
         <?php
 
         return ob_get_clean();
@@ -394,34 +396,36 @@ class STM_Tutor_Demo_Manager {
 
         ob_start();
         ?>
-        <h3 class="tdl-list-title">My Demos</h3>
-        <table class="tdl-table">
-            <thead>
-                <tr>
-                    <th>Title</th>
-                    <th>Type</th>
-                    <th>Date</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ( $posts as $post ) : ?>
-                    <?php
-                    $type       = get_post_meta( $post->ID, '_tdl_demo_type', true );
-                    $delete_url = wp_nonce_url(
-                        add_query_arg( 'tdl_delete', $post->ID, $this->get_current_url() ),
-                        'tdl_delete_demo_' . $post->ID
-                    );
-                    ?>
+        <div class="tutor-fs-5 tutor-fw-medium tutor-text-primary tutor-mb-16 tutor-mt-32">My Demos</div>
+        <div class="tutor-table-responsive">
+            <table class="tutor-table">
+                <thead>
                     <tr>
-                        <td><?php echo esc_html( $post->post_title ); ?></td>
-                        <td><span class="tdl-type-badge"><?php echo esc_html( $type ); ?></span></td>
-                        <td><?php echo esc_html( get_the_date( '', $post ) ); ?></td>
-                        <td><a class="tdl-table-delete" href="<?php echo esc_url( $delete_url ); ?>" data-tdl-delete="1">Delete</a></td>
+                        <th class="tutor-text-secondary">Title</th>
+                        <th class="tutor-text-secondary">Type</th>
+                        <th class="tutor-text-secondary">Date</th>
+                        <th></th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ( $posts as $post ) : ?>
+                        <?php
+                        $type       = get_post_meta( $post->ID, '_tdl_demo_type', true );
+                        $delete_url = wp_nonce_url(
+                            add_query_arg( 'tdl_delete', $post->ID, $this->get_current_url() ),
+                            'tdl_delete_demo_' . $post->ID
+                        );
+                        ?>
+                        <tr>
+                            <td class="tutor-text-primary"><?php echo esc_html( $post->post_title ); ?></td>
+                            <td><span class="tutor-badge tutor-badge-secondary"><?php echo esc_html( $type ); ?></span></td>
+                            <td class="tutor-text-subdued"><?php echo esc_html( get_the_date( 'M j, Y', $post->ID ) ); ?></td>
+                            <td class="tutor-text-right"><a class="tutor-btn tutor-btn-outline-danger tutor-btn-x-small" href="<?php echo esc_url( $delete_url ); ?>" data-tdl-delete="1">Delete</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <?php
 
         return ob_get_clean();

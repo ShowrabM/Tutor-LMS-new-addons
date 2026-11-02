@@ -4,7 +4,7 @@
   var suggestionTimer;
 
   function getCourseCards() {
-    return $('.tutor-dashboard-my-courses .tutor-card.tutor-course-card');
+    return $('.tutor-dashboard-my-courses .tutor-card.tutor-course-card, .tutor-dashboard-my-courses .tutor-my-courses-card');
   }
 
   function filterCourses(query) {
@@ -15,7 +15,7 @@
 
     $cards.each(function() {
       var $card = $(this);
-      var text = ($card.find('.tutor-course-name').first().text() || '').toLowerCase();
+      var text = ($card.find('.tutor-my-courses-card-content a, .tutor-course-name').first().text() || '').toLowerCase();
       var match = !q || text.indexOf(q) !== -1;
 
       $card.toggle(match);

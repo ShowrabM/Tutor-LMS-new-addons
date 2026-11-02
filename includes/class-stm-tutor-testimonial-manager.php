@@ -182,7 +182,7 @@ class STM_Tutor_Testimonial_Manager {
         ob_start();
 
         if ( isset( $_GET['tdl_saved'] ) ) {
-            echo '<div class="tdl-t-msg">Testimonial saved successfully.</div>';
+            echo '<div class="tutor-alert tutor-alert-success tutor-mb-4">Testimonial saved successfully.</div>';
         }
 
         echo $this->get_form_markup( true );
@@ -191,7 +191,7 @@ class STM_Tutor_Testimonial_Manager {
     }
 
     public function render_upload_modal() {
-        if ( ! $this->user_is_allowed() || $this->page_has_shortcode( 'tdl_testimonial_form' ) ) {
+        if ( ! $this->user_is_allowed() ) {
             return;
         }
         ?>
@@ -201,9 +201,9 @@ class STM_Tutor_Testimonial_Manager {
                 <button type="button" class="tdl-t-modal-close" data-tdl-t-modal-close="1" aria-label="Close">x</button>
                 <h2 class="tdl-t-modal-title" id="tdl-testimonial-modal-title">Add Testimonial</h2>
                 <?php if ( isset( $_GET['tdl_saved'] ) ) : ?>
-                    <div class="tdl-t-msg">Testimonial saved successfully.</div>
+                    <div class="tutor-alert tutor-alert-success tutor-mb-4">Testimonial saved successfully.</div>
                 <?php endif; ?>
-                <?php echo $this->get_form_markup( true ); ?>
+                <?php echo $this->get_form_markup( false ); ?>
             </div>
         </div>
         <?php
@@ -311,35 +311,35 @@ class STM_Tutor_Testimonial_Manager {
     private function get_form_markup( $include_table ) {
         ob_start();
         ?>
-        <form method="post" class="tdl-t-form" data-tdl-testimonial-form="1">
+        <form method="post" class="tdl-t-form tutor-mb-8" data-tdl-testimonial-form="1">
             <?php wp_nonce_field( self::NONCE_KEY, 'tdl_t_nonce' ); ?>
 
-            <div class="tdl-t-field">
-                <label for="tdl_t_type">Testimonial Type</label>
-                <select name="tdl_t_type" id="tdl_t_type">
+            <div class="tdl-t-field tutor-mb-4">
+                <label for="tdl_t_type" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Testimonial Type</label>
+                <select name="tdl_t_type" id="tdl_t_type" class="tutor-form-control">
                     <option value="text">Text testimonial</option>
                     <option value="video">Video testimonial</option>
                 </select>
             </div>
 
-            <div class="tdl-t-field">
-                <label for="tdl_t_name">Client Name</label>
-                <input type="text" name="tdl_t_name" id="tdl_t_name" placeholder="e.g. Jonathan Marks" required>
+            <div class="tdl-t-field tutor-mb-4">
+                <label for="tdl_t_name" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Client Name</label>
+                <input type="text" name="tdl_t_name" id="tdl_t_name" class="tutor-form-control" placeholder="e.g. Jonathan Marks" required>
             </div>
 
-            <div class="tdl-t-field">
-                <label for="tdl_t_company">Company / Organisation</label>
-                <input type="text" name="tdl_t_company" id="tdl_t_company" placeholder="e.g. JM Tennis Academy">
+            <div class="tdl-t-field tutor-mb-4">
+                <label for="tdl_t_company" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Company / Organisation</label>
+                <input type="text" name="tdl_t_company" id="tdl_t_company" class="tutor-form-control" placeholder="e.g. JM Tennis Academy">
             </div>
 
-            <div class="tdl-t-field">
-                <label for="tdl_t_website">Website (optional)</label>
-                <input type="url" name="tdl_t_website" id="tdl_t_website" placeholder="https://www.example.com">
+            <div class="tdl-t-field tutor-mb-4">
+                <label for="tdl_t_website" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Website (optional)</label>
+                <input type="url" name="tdl_t_website" id="tdl_t_website" class="tutor-form-control" placeholder="https://www.example.com">
             </div>
 
-            <div class="tdl-t-field">
-                <label>Rating</label>
-                <div class="tdl-stars">
+            <div class="tdl-t-field tutor-mb-4">
+                <label class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Rating</label>
+                <div class="tdl-stars tutor-flex tutor-gap-1">
                     <span class="tdl-star active" data-val="1">&#9733;</span>
                     <span class="tdl-star active" data-val="2">&#9733;</span>
                     <span class="tdl-star active" data-val="3">&#9733;</span>
@@ -349,39 +349,39 @@ class STM_Tutor_Testimonial_Manager {
                 <input type="hidden" name="tdl_t_rating" id="tdl_t_rating" value="5">
             </div>
 
-            <div class="tdl-t-field">
-                <label for="tdl_t_logo">Company Logo or Client Photo</label>
-                <div class="tdl-t-row">
-                    <input type="text" name="tdl_t_logo" id="tdl_t_logo" placeholder="Select or paste image URL">
-                    <button type="button" class="tdl-t-btn secondary tdl-logo-btn">Choose Image</button>
+            <div class="tdl-t-field tutor-mb-4">
+                <label for="tdl_t_logo" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Company Logo or Client Photo</label>
+                <div class="tdl-t-row tutor-flex tutor-gap-2">
+                    <input type="text" name="tdl_t_logo" id="tdl_t_logo" class="tutor-form-control" placeholder="Select or paste image URL">
+                    <button type="button" class="tutor-btn tutor-btn-outline-primary tdl-logo-btn">Choose Image</button>
                 </div>
                 <img id="tdl-logo-preview" src="" alt="Logo preview">
             </div>
 
-            <div class="tdl-t-field tdl-t-field-text">
-                <label for="tdl_t_quote">Testimonial Quote</label>
-                <textarea name="tdl_t_quote" id="tdl_t_quote" placeholder="Paste the client's testimonial text here..."></textarea>
+            <div class="tdl-t-field tdl-t-field-text tutor-mb-4">
+                <label for="tdl_t_quote" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Testimonial Quote</label>
+                <textarea name="tdl_t_quote" id="tdl_t_quote" class="tutor-form-control" placeholder="Paste the client's testimonial text here..."></textarea>
             </div>
 
-            <div class="tdl-t-field tdl-t-field-video" style="display:none;">
-                <label for="tdl_t_video">Video File URL</label>
-                <div class="tdl-t-row">
-                    <input type="text" name="tdl_t_video" id="tdl_t_video" placeholder="Select or paste video URL">
-                    <button type="button" class="tdl-t-btn secondary tdl-video-btn">Choose Video</button>
+            <div class="tdl-t-field tdl-t-field-video tutor-mb-4" style="display:none;">
+                <label for="tdl_t_video" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Video File URL</label>
+                <div class="tdl-t-row tutor-flex tutor-gap-2">
+                    <input type="text" name="tdl_t_video" id="tdl_t_video" class="tutor-form-control" placeholder="Select or paste video URL">
+                    <button type="button" class="tutor-btn tutor-btn-outline-primary tdl-video-btn">Choose Video</button>
                 </div>
             </div>
 
-            <div class="tdl-t-field tdl-t-field-video" style="display:none;">
-                <label for="tdl_t_thumbnail">Video Thumbnail Image</label>
-                <div class="tdl-t-row">
-                    <input type="text" name="tdl_t_thumbnail" id="tdl_t_thumbnail" placeholder="Select or paste thumbnail URL">
-                    <button type="button" class="tdl-t-btn secondary tdl-thumb-btn">Choose Thumbnail</button>
+            <div class="tdl-t-field tdl-t-field-video tutor-mb-4" style="display:none;">
+                <label for="tdl_t_thumbnail" class="tutor-form-label tutor-text-secondary tutor-block tutor-mb-2">Video Thumbnail Image</label>
+                <div class="tdl-t-row tutor-flex tutor-gap-2">
+                    <input type="text" name="tdl_t_thumbnail" id="tdl_t_thumbnail" class="tutor-form-control" placeholder="Select or paste thumbnail URL">
+                    <button type="button" class="tutor-btn tutor-btn-outline-primary tdl-thumb-btn">Choose Thumbnail</button>
                 </div>
                 <img id="tdl-t-thumb-preview" src="" alt="Thumbnail preview">
             </div>
 
-            <div class="tdl-t-field">
-                <button type="submit" name="tdl_testimonial_save" class="tdl-t-btn">Save Testimonial</button>
+            <div class="tdl-t-field tutor-mt-6">
+                <button type="submit" name="tdl_testimonial_save" class="tutor-btn tutor-btn-primary">Save Testimonial</button>
             </div>
         </form>
         <?php if ( $include_table ) : ?>
@@ -410,38 +410,40 @@ class STM_Tutor_Testimonial_Manager {
 
         ob_start();
         ?>
-        <h3 class="tdl-t-list-title">My Testimonials</h3>
-        <table class="tdl-t-table">
-            <thead>
-                <tr>
-                    <th>Client</th>
-                    <th>Company</th>
-                    <th>Type</th>
-                    <th>Rating</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ( $posts as $post ) : ?>
-                    <?php
-                    $type       = get_post_meta( $post->ID, '_tdl_t_type', true );
-                    $company    = get_post_meta( $post->ID, '_tdl_t_company', true );
-                    $rating     = (int) get_post_meta( $post->ID, '_tdl_t_rating', true );
-                    $delete_url = wp_nonce_url(
-                        add_query_arg( 'tdl_t_delete', $post->ID, $this->get_current_url() ),
-                        'tdl_t_delete_' . $post->ID
-                    );
-                    ?>
+        <div class="tutor-fs-5 tutor-fw-medium tutor-text-primary tutor-mb-16 tutor-mt-32">My Testimonials</div>
+        <div class="tutor-table-responsive">
+            <table class="tutor-table">
+                <thead>
                     <tr>
-                        <td><?php echo esc_html( $post->post_title ); ?></td>
-                        <td><?php echo esc_html( $company ); ?></td>
-                        <td><span class="tdl-t-badge"><?php echo esc_html( $type ); ?></span></td>
-                        <td class="tdl-t-rating"><?php echo wp_kses_post( $this->stars_html( $rating ) ); ?></td>
-                        <td><a class="tdl-t-del" href="<?php echo esc_url( $delete_url ); ?>" data-tdl-t-delete="1">Delete</a></td>
+                        <th class="tutor-text-secondary">Client</th>
+                        <th class="tutor-text-secondary">Company</th>
+                        <th class="tutor-text-secondary">Type</th>
+                        <th class="tutor-text-secondary">Rating</th>
+                        <th></th>
                     </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    <?php foreach ( $posts as $post ) : ?>
+                        <?php
+                        $type       = get_post_meta( $post->ID, '_tdl_t_type', true );
+                        $company    = get_post_meta( $post->ID, '_tdl_t_company', true );
+                        $rating     = (int) get_post_meta( $post->ID, '_tdl_t_rating', true );
+                        $delete_url = wp_nonce_url(
+                            add_query_arg( 'tdl_t_delete', $post->ID, $this->get_current_url() ),
+                            'tdl_t_delete_' . $post->ID
+                        );
+                        ?>
+                        <tr>
+                            <td class="tutor-text-primary"><?php echo esc_html( $post->post_title ); ?></td>
+                            <td class="tutor-text-secondary"><?php echo esc_html( $company ); ?></td>
+                            <td><span class="tutor-badge tutor-badge-secondary"><?php echo esc_html( $type ); ?></span></td>
+                            <td class="tdl-t-rating"><?php echo wp_kses_post( $this->stars_html( $rating ) ); ?></td>
+                            <td class="tutor-text-right"><a class="tutor-btn tutor-btn-outline-danger tutor-btn-x-small" href="<?php echo esc_url( $delete_url ); ?>" data-tdl-t-delete="1">Delete</a></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
         <?php
 
         return ob_get_clean();

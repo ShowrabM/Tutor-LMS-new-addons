@@ -1,0 +1,12 @@
+/**
+ * STM Tutor Membership Dashboard Styling
+ * Ensures clean, unobtrusive styling for Paid Memberships Pro links
+ */
+
+/* Clean link transitions in sidebar */
+.tutor-dashboard-menu-membership-account a,
+.tutor-dashboard-menu-membership-billing a,
+.tutor-dashboard-menu-membership-orders a,
+.tutor-dashboard-menu-membership-plans a {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}

@@ -976,3 +976,218 @@ function stm_filter_courses_callback() {
         )
     );
 }
+
+/**
+ * Auto-enroll logged-in PMPro members when they view a course they have access to.
+ */
+add_filter( 'tutor_alter_enroll_status', 'stm_auto_enroll_pmpro_members' );
+function stm_auto_enroll_pmpro_members( $is_enrolled ) {
+    if ( ! is_user_logged_in() || $is_enrolled ) {
+        return $is_enrolled;
+    }
+
+    $course_id = get_the_ID();
+    if ( ! $course_id ) {
+        return $is_enrolled;
+    }
+
+    $user_id = get_current_user_id();
+
+    if ( function_exists( 'stm_user_has_pmpro_course_access' ) && stm_user_has_pmpro_course_access( $course_id, $user_id ) ) {
+        global $wpdb;
+        $pending_enrollment = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_author = %d AND post_parent = %d AND post_type = 'tutor_enrolled' AND post_status = 'pending' LIMIT 1",
+                $user_id,
+                $course_id
+            )
+        );
+
+        if ( $pending_enrollment ) {
+            wp_update_post( array(
+                'ID'          => $pending_enrollment->ID,
+                'post_status' => 'completed',
+            ) );
+        } else {
+            tutor_utils()->do_enroll( $course_id );
+        }
+
+        // Re-check enrollment status (it will now be completed/truthy)
+        $is_enrolled = tutor_utils()->is_enrolled( $course_id );
+    }
+
+    return $is_enrolled;
+}
+
+/**
+ * Intercept enrollment attempts to complete any existing pending enrollments.
+ */
+add_action( 'tutor_before_enroll', 'stm_resolve_pending_enrollment_before_enroll', 10, 1 );
+function stm_resolve_pending_enrollment_before_enroll( $course_id ) {
+    $user_id = get_current_user_id();
+    if ( ! $user_id || ! $course_id ) {
+        return;
+    }
+
+    if ( function_exists( 'stm_user_has_pmpro_course_access' ) && stm_user_has_pmpro_course_access( $course_id, $user_id ) ) {
+        global $wpdb;
+        $pending_enrollment = $wpdb->get_row(
+            $wpdb->prepare(
+                "SELECT ID FROM {$wpdb->posts} WHERE post_author = %d AND post_parent = %d AND post_type = 'tutor_enrolled' AND post_status = 'pending' LIMIT 1",
+                $user_id,
+                $course_id
+            )
+        );
+
+        if ( $pending_enrollment ) {
+            wp_update_post( array(
+                'ID'          => $pending_enrollment->ID,
+                'post_status' => 'completed',
+            ) );
+        }
+    }
+}
+
+/**
+ * Filter new enrollment data to complete it immediately if the user has PMPro access.
+ */
+add_filter( 'tutor_enroll_data', 'stm_complete_pmpro_enrollment_status', 10, 1 );
+function stm_complete_pmpro_enrollment_status( $enroll_data ) {
+    $course_id = isset( $enroll_data['post_parent'] ) ? absint( $enroll_data['post_parent'] ) : 0;
+    $user_id   = isset( $enroll_data['post_author'] ) ? absint( $enroll_data['post_author'] ) : 0;
+
+    if ( $course_id && $user_id ) {
+        if ( function_exists( 'stm_user_has_pmpro_course_access' ) && stm_user_has_pmpro_course_access( $course_id, $user_id ) ) {
+            $enroll_data['post_status'] = 'completed';
+        }
+    }
+
+    return $enroll_data;
+}
+
+/**
+ * Register Tutor Demos and Testimonials inside the instructor dashboard sidebar navigation menu
+ */
+add_filter( 'tutor_dashboard/instructor_nav_items', 'stm_add_custom_sidebar_nav_items' );
+function stm_add_custom_sidebar_nav_items( $items ) {
+    $items['tutor-demos'] = array(
+        'title'       => __( 'Tutor Demos', 'tutor' ),
+        'auth_cap'    => tutor()->instructor_role,
+        'icon'        => \TUTOR\Icon::VIDEO,
+        'active_icon' => \TUTOR\Icon::VIDEO_FILL,
+    );
+    
+    $items['testimonials'] = array(
+        'title'       => __( 'Testimonials', 'tutor' ),
+        'auth_cap'    => tutor()->instructor_role,
+        'icon'        => \TUTOR\Icon::LIST,
+        'active_icon' => \TUTOR\Icon::LIST,
+    );
+
+    // Google Search Console Dashboard link as a left sidebar navigation item if configured
+    if ( class_exists( 'STM_GSC_Dashboard_Link' ) ) {
+        $gsc_options = get_option( 'stm_gsc_dashboard_link_options', array() );
+        if ( ! empty( $gsc_options['enabled'] ) && ! empty( $gsc_options['gsc_url'] ) ) {
+            $label = ! empty( $gsc_options['button_label'] ) ? $gsc_options['button_label'] : 'Open GSC';
+            $items['gsc-link'] = array(
+                'title'       => $label,
+                'auth_cap'    => tutor()->instructor_role,
+                'icon'        => \TUTOR\Icon::ANALYTICS,
+                'active_icon' => \TUTOR\Icon::ANALYTICS_FILL,
+                'url'         => esc_url( $gsc_options['gsc_url'] ),
+            );
+        }
+    }
+    
+    return $items;
+}
+
+/**
+ * Load plugin dashboard page templates instead of the default Tutor dashboard templates
+ */
+add_filter( 'load_dashboard_template_part_from_other_location', 'stm_load_custom_dashboard_sub_pages' );
+function stm_load_custom_dashboard_sub_pages( $location ) {
+    $page = get_query_var( 'tutor_dashboard_page' );
+    
+    if ( 'tutor-demos' === $page ) {
+        $file = STM_TUTOR_CUSTOMIZATION_DIR . 'templates/dashboard/tutor-demos.php';
+        if ( file_exists( $file ) ) {
+            return $file;
+        }
+    }
+    
+    if ( 'testimonials' === $page ) {
+        $file = STM_TUTOR_CUSTOMIZATION_DIR . 'templates/dashboard/testimonials.php';
+        if ( file_exists( $file ) ) {
+            return $file;
+        }
+    }
+    
+    return $location;
+}
+
+/**
+ * Add custom popup trigger buttons (Upload Demo, Add Testimonial, GSC link) to the Tutor LMS 4.x dashboard header
+ */
+add_action( 'tutor_dashboard/before_header_button', 'stm_add_custom_dashboard_buttons' );
+function stm_add_custom_dashboard_buttons() {
+    if ( ! function_exists( 'stm_is_current_user_instructor' ) || ! stm_is_current_user_instructor() ) {
+        return;
+    }
+
+    // 1. Google Search Console Dashboard link
+    if ( class_exists( 'STM_GSC_Dashboard_Link' ) ) {
+        $gsc_options = get_option( 'stm_gsc_dashboard_link_options', array() );
+        if ( ! empty( $gsc_options['enabled'] ) && ! empty( $gsc_options['gsc_url'] ) ) {
+            $label = ! empty( $gsc_options['button_label'] ) ? $gsc_options['button_label'] : 'Open GSC';
+            echo '<a class="tutor-btn tutor-btn-outline-primary tutor-btn-x-small stm-gsc-dashboard-btn tutor-mr-8" href="' . esc_url( $gsc_options['gsc_url'] ) . '" target="_blank" rel="noopener noreferrer">' . esc_html( $label ) . '</a>';
+        }
+    }
+
+    // 2. Tutor Demo upload popup button
+    if ( function_exists( 'stm_user_can_manage_demos' ) && stm_user_can_manage_demos() ) {
+        echo '<a href="#" class="tutor-btn tutor-btn-outline-primary tutor-btn-x-small tdl-dashboard-upload-btn tutor-mr-8">Upload Demo</a>';
+    }
+
+    // 3. Testimonial add popup button
+    if ( class_exists( 'STM_Tutor_Testimonial_Manager' ) ) {
+        if ( function_exists( 'stm_user_can_manage_demos' ) && stm_user_can_manage_demos() ) {
+            echo '<a href="#" class="tutor-btn tutor-btn-outline-primary tutor-btn-x-small tdl-t-dashboard-btn tutor-mr-8">Add Testimonial</a>';
+        }
+    }
+}
+
+/**
+ * PMPro Login & Dashboard Access Fix
+ * 1. Unblock Dashboard (/wp-admin/) access for logged-in users.
+ * 2. Redirect to Dashboard after logging in via PMPro login form.
+ * 3. Redirect logged-in users from /login/ page to Dashboard.
+ */
+add_filter( 'pmpro_block_dashboard', '__return_false', 99 );
+
+add_filter( 'login_redirect', 'stm_fix_pmpro_dashboard_login_redirect', 99, 3 );
+function stm_fix_pmpro_dashboard_login_redirect( $redirect_to, $request, $user ) {
+    if ( isset( $user->roles ) && is_array( $user->roles ) ) {
+        if ( in_array( 'administrator', $user->roles ) ) {
+            return admin_url();
+        }
+        if ( ! empty( $request ) && strpos( $request, 'wp-login.php' ) === false && strpos( $request, '/login' ) === false ) {
+            return $request;
+        }
+        return admin_url();
+    }
+    return $redirect_to;
+}
+
+add_action( 'template_redirect', 'stm_redirect_logged_in_user_to_dashboard', 5 );
+function stm_redirect_logged_in_user_to_dashboard() {
+    if ( is_user_logged_in() && function_exists( 'pmpro_is_login_page' ) && pmpro_is_login_page() ) {
+        if ( empty( $_REQUEST['action'] ) || $_REQUEST['action'] === 'login' ) {
+            if ( current_user_can( 'manage_options' ) ) {
+                wp_safe_redirect( admin_url() );
+                exit;
+            }
+        }
+    }
+}
+

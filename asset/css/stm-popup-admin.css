@@ -1,0 +1,350 @@
+/**
+ * STM Tutor Popup Maker - Admin Styling
+ * Clean, modern styling adhering to WordPress Admin standards.
+ */
+
+/* Meta Box Container */
+.stm-pm-metabox-wrapper {
+    padding: 10px 4px 15px;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.stm-pm-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 18px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.stm-pm-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.stm-pm-section-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0 0 16px 0;
+}
+
+/* Media Uploader */
+.stm-pm-media-uploader {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stm-pm-banner-preview-box {
+    position: relative;
+    max-width: 440px;
+    background: #f8fafc;
+    border: 2px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.stm-pm-banner-preview-img {
+    display: block;
+    width: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.stm-pm-media-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Checkbox Checklist */
+.stm-pm-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stm-pm-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    transition: background 0.15s ease;
+    cursor: pointer;
+}
+
+.stm-pm-checkbox-item:hover {
+    background: #f1f5f9;
+}
+
+.stm-pm-checkbox-item input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.stm-pm-checkbox-item .stm-pm-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+/* Grid for display controls */
+.stm-pm-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 782px) {
+    .stm-pm-grid-2 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.stm-pm-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 14px;
+}
+
+.stm-pm-control-group label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #334155;
+}
+
+.stm-pm-control-group input[type="text"],
+.stm-pm-control-group input[type="number"],
+.stm-pm-control-group textarea {
+    width: 100%;
+    max-width: 480px;
+    padding: 8px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.stm-pm-control-group .description {
+    font-size: 12px;
+    color: #64748b;
+    margin: 2px 0 0 0;
+}
+
+/* Admin Submenu: Export Leads Page */
+.stm-pm-export-page {
+    max-width: 1200px;
+    margin: 20px 20px 0 0;
+}
+
+.stm-pm-header-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    background: #ffffff;
+    padding: 18px 24px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.stm-pm-header-bar h1 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.stm-pm-stats-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 220px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.stm-pm-stats-num {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0284c7;
+    line-height: 1;
+    margin-bottom: 6px;
+}
+
+.stm-pm-stats-label {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #64748b;
+    letter-spacing: 0.5px;
+}
+
+.stm-pm-table-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+
+.stm-pm-table-card table.wp-list-table {
+    border: none;
+    box-shadow: none;
+}
+
+.stm-pm-empty-state {
+    text-align: center;
+    padding: 48px 20px;
+    color: #64748b;
+}
+
+.stm-pm-empty-state svg {
+    width: 48px;
+    height: 48px;
+    color: #94a3b8;
+    margin-bottom: 12px;
+}
+
+/* ==========================================================================
+   WordPress Media Modal Frontend Fixes
+   ========================================================================== */
+.media-modal {
+    z-index: 160000 !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif !important;
+    background: #ffffff !important;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4) !important;
+}
+.media-modal-backdrop {
+    z-index: 159900 !important;
+    background: rgba(15, 23, 42, 0.75) !important;
+}
+.media-frame.mode-select .media-frame-content {
+    bottom: 60px !important;
+    top: 52px !important;
+    background: #ffffff !important;
+}
+.media-frame-title {
+    background: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    padding: 0 16px !important;
+}
+.media-frame-title h1 {
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    line-height: 50px !important;
+    margin: 0 !important;
+}
+.media-frame-router {
+    top: 50px !important;
+    background: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+.media-frame-toolbar {
+    background: #f8fafc !important;
+    border-top: 1px solid #e2e8f0 !important;
+}
+.media-modal-close {
+    border: none !important;
+    color: #64748b !important;
+    background: transparent !important;
+    width: 50px !important;
+    height: 50px !important;
+}
+.media-modal-close:hover {
+    color: #0f172a !important;
+    background: rgba(0,0,0,0.05) !important;
+}
+
+/* ==========================================================================
+   Direct In-Page Uploader & Dropzone (Elderly-Friendly)
+   ========================================================================== */
+.stm-pm-dropzone-box {
+    border: 2px dashed #94a3b8;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 16px;
+    position: relative;
+}
+.stm-pm-dropzone-box:hover,
+.stm-pm-dropzone-box.is-dragover {
+    border-color: #0284c7;
+    background: #f0f9ff;
+}
+.stm-pm-dropzone-icon {
+    margin-bottom: 12px;
+}
+.stm-pm-dropzone-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 4px;
+}
+.stm-pm-dropzone-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin-bottom: 14px;
+}
+.stm-pm-upload-progress {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #0284c7;
+}
+
+.stm-pm-btn-spinner {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(2, 132, 199, 0.25);
+    border-top-color: #0284c7;
+    border-radius: 50%;
+    animation: stm-pm-spin 0.7s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes stm-pm-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Ensure no theme red borders affect media modal or buttons */
+.media-modal-close,
+.media-modal-close:focus,
+.media-modal-close:hover,
+.media-modal-close:active {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+

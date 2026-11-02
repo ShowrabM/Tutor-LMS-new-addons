@@ -1,0 +1,711 @@
+/**
+ * STM Tutor Popup Maker - Admin Configurator & Frontend Responsive Popup Styles
+ */
+
+/* ==========================================================================
+   1. Admin Popup Maker Modal (Configuration in Dashboard)
+   ========================================================================== */
+.stm-pm-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.stm-pm-modal.is-open {
+    display: flex;
+    opacity: 1;
+}
+
+.stm-pm-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+}
+
+.stm-pm-dialog {
+    position: relative;
+    width: 100%;
+    max-width: 680px;
+    max-height: 92vh;
+    background: #151924;
+    border: 1px solid #283248;
+    border-radius: 16px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 2;
+    transform: translateY(14px) scale(0.98);
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.stm-pm-modal.is-open .stm-pm-dialog {
+    transform: translateY(0) scale(1);
+}
+
+/* Header & Tabs */
+.stm-pm-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    border-bottom: 1px solid #232a3b;
+    background: #181d2a;
+}
+
+.stm-pm-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.stm-pm-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #f8fafc;
+}
+
+.stm-pm-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    background: rgba(37, 99, 235, 0.18);
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    color: #60a5fa;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.stm-pm-close {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.stm-pm-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.stm-pm-close svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Tabs Bar */
+.stm-pm-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 10px 24px 0;
+    background: #181d2a;
+    border-bottom: 1px solid #232a3b;
+}
+
+.stm-pm-tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: #94a3b8;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.stm-pm-tab-btn:hover {
+    color: #f1f5f9;
+}
+
+.stm-pm-tab-btn.is-active {
+    color: #38bdf8;
+    border-bottom-color: #38bdf8;
+}
+
+/* Body */
+.stm-pm-body {
+    padding: 22px 24px;
+    overflow-y: auto;
+    max-height: calc(92vh - 150px);
+    box-sizing: border-box;
+}
+
+.stm-pm-body::-webkit-scrollbar {
+    width: 6px;
+}
+.stm-pm-body::-webkit-scrollbar-track {
+    background: #151924;
+}
+.stm-pm-body::-webkit-scrollbar-thumb {
+    background: #283248;
+    border-radius: 3px;
+}
+
+.stm-pm-tab-content {
+    display: none;
+}
+.stm-pm-tab-content.is-active {
+    display: block;
+}
+
+/* Form Controls */
+.stm-pm-row {
+    margin-bottom: 18px;
+}
+
+.stm-pm-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-bottom: 6px;
+}
+
+.stm-pm-label .stm-pm-opt {
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 400;
+    margin-left: 4px;
+}
+
+.stm-pm-input,
+.stm-pm-select,
+.stm-pm-textarea {
+    width: 100%;
+    box-sizing: border-box;
+    background: #1c2230;
+    border: 1px solid #2d374d;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #f1f5f9;
+    font-size: 14px;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.stm-pm-input:focus,
+.stm-pm-select:focus,
+.stm-pm-textarea:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    background: #1e2536;
+}
+
+.stm-pm-textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+
+/* Image Dropzone (Image Only) */
+.stm-pm-dropzone {
+    position: relative;
+    border: 2px dashed #334155;
+    border-radius: 12px;
+    background: #191f2c;
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.stm-pm-dropzone:hover,
+.stm-pm-dropzone.is-dragover {
+    border-color: #3b82f6;
+    background: #1e2536;
+}
+
+.stm-pm-dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 5;
+}
+
+.stm-pm-dropzone-icon {
+    color: #3b82f6;
+    margin-bottom: 8px;
+}
+.stm-pm-dropzone-icon svg {
+    width: 36px;
+    height: 36px;
+}
+
+.stm-pm-dropzone-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f1f5f9;
+    margin-bottom: 3px;
+}
+
+.stm-pm-dropzone-sub {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.stm-pm-image-preview {
+    display: none;
+    margin-top: 10px;
+    background: #191f2c;
+    border: 1px solid #2d374d;
+    border-radius: 10px;
+    padding: 10px;
+    align-items: center;
+    gap: 14px;
+}
+.stm-pm-image-preview.has-image {
+    display: flex;
+}
+
+.stm-pm-preview-img {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: #0f141f;
+    border: 1px solid #2b354a;
+    flex-shrink: 0;
+}
+
+.stm-pm-preview-info {
+    flex-grow: 1;
+    min-width: 0;
+}
+
+.stm-pm-preview-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f8fafc;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stm-pm-preview-clear {
+    background: transparent;
+    border: 1px solid #475569;
+    color: #cbd5e1;
+    font-size: 12px;
+    border-radius: 6px;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.stm-pm-preview-clear:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #fff;
+}
+
+/* Switch Toggles */
+.stm-pm-switch-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #191f2c;
+    border: 1px solid #283248;
+    border-radius: 10px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+}
+
+.stm-pm-switch-info {
+    flex-grow: 1;
+    padding-right: 16px;
+}
+
+.stm-pm-switch-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 2px;
+}
+
+.stm-pm-switch-desc {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+.stm-pm-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.stm-pm-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.stm-pm-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: #334155;
+    transition: .2s;
+    border-radius: 24px;
+}
+
+.stm-pm-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .2s;
+    border-radius: 50%;
+}
+
+.stm-pm-toggle input:checked + .stm-pm-slider {
+    background-color: #2563eb;
+}
+
+.stm-pm-toggle input:checked + .stm-pm-slider:before {
+    transform: translateX(20px);
+}
+
+/* Alert Notification */
+.stm-pm-alert {
+    display: none;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    margin-bottom: 16px;
+}
+.stm-pm-alert.stm-alert-success {
+    display: block;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    color: #34d399;
+}
+.stm-pm-alert.stm-alert-error {
+    display: block;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #f87171;
+}
+
+/* Leads Table */
+.stm-pm-leads-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.stm-pm-leads-table th {
+    text-align: left;
+    padding: 10px 12px;
+    background: #191f2c;
+    color: #94a3b8;
+    border-bottom: 1px solid #283248;
+}
+
+.stm-pm-leads-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #212838;
+    color: #cbd5e1;
+}
+
+.stm-pm-leads-table tr:hover td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Footer Actions */
+.stm-pm-footer {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    border-top: 1px solid #232a3b;
+    background: #181d2a;
+}
+
+.stm-pm-btn-cancel {
+    background: transparent;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    font-size: 14px;
+    padding: 9px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.stm-pm-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stm-pm-btn-save {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 9px 22px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+}
+.stm-pm-btn-save:hover {
+    background: #1d4ed8;
+}
+
+/* ==========================================================================
+   2. Frontend Responsive Opt-in Popup
+   ========================================================================== */
+.stm-live-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 999998;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    box-sizing: border-box;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stm-live-popup.is-visible {
+    display: flex;
+    opacity: 1;
+}
+
+.stm-live-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(10, 14, 23, 0.82);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+}
+
+.stm-live-card {
+    position: relative;
+    width: 100%;
+    max-width: 500px;
+    background: #151924;
+    border: 1px solid #2a3449;
+    border-radius: 18px;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    z-index: 2;
+    transform: scale(0.95);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-sizing: border-box;
+    color: #f1f5f9;
+}
+
+.stm-live-popup.is-visible .stm-live-card {
+    transform: scale(1);
+}
+
+.stm-live-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    z-index: 10;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #cbd5e1;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.stm-live-close:hover {
+    background: #dc2626;
+    border-color: #dc2626;
+    color: #ffffff;
+}
+
+.stm-live-image-wrap {
+    width: 100%;
+    max-height: 240px;
+    overflow: hidden;
+    background: #0f141f;
+}
+
+.stm-live-image {
+    width: 100%;
+    height: 100%;
+    max-height: 240px;
+    object-fit: cover;
+    display: block;
+}
+
+.stm-live-content {
+    padding: 24px;
+    text-align: center;
+}
+
+.stm-live-admin-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(234, 179, 8, 0.2);
+    border: 1px solid rgba(234, 179, 8, 0.4);
+    color: #facc15;
+    font-size: 11px;
+    font-weight: 700;
+    border-radius: 4px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.stm-live-title {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 700;
+    color: #f8fafc;
+    line-height: 1.3;
+}
+
+.stm-live-desc {
+    font-size: 14px;
+    color: #94a3b8;
+    margin: 0 0 20px;
+    line-height: 1.5;
+}
+
+.stm-live-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stm-live-field {
+    width: 100%;
+    box-sizing: border-box;
+    background: #1c2230;
+    border: 1px solid #2d374d;
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #f8fafc;
+    font-size: 14px;
+    transition: all 0.2s ease;
+}
+.stm-live-field:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    background: #1e2536;
+}
+
+.stm-live-submit {
+    background: #2563eb;
+    border: 1px solid #3b82f6;
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 100%;
+}
+.stm-live-submit:hover {
+    background: #1d4ed8;
+}
+
+.stm-live-thankyou {
+    display: none;
+    padding: 20px 10px;
+    text-align: center;
+}
+.stm-live-thankyou-icon {
+    font-size: 36px;
+    color: #34d399;
+    margin-bottom: 8px;
+}
+.stm-live-thankyou-text {
+    font-size: 16px;
+    font-weight: 600;
+    color: #34d399;
+}
+
+/* ==========================================================================
+   3. Responsive Rules (Mobile & Tablet)
+   ========================================================================== */
+@media (max-width: 640px) {
+    .stm-pm-modal,
+    .stm-live-popup {
+        padding: 8px;
+    }
+
+    .stm-pm-dialog,
+    .stm-live-card {
+        max-width: 100%;
+        border-radius: 12px;
+        max-height: 94vh;
+    }
+
+    .stm-pm-header,
+    .stm-pm-tabs,
+    .stm-pm-body,
+    .stm-pm-footer,
+    .stm-live-content {
+        padding: 16px;
+    }
+
+    .stm-pm-input,
+    .stm-pm-select,
+    .stm-pm-textarea,
+    .stm-live-field {
+        font-size: 16px; /* Prevents auto-zoom on iOS */
+    }
+
+    .stm-live-image-wrap {
+        max-height: 180px;
+    }
+
+    .stm-pm-footer {
+        flex-direction: column-reverse;
+    }
+    .stm-pm-btn-cancel,
+    .stm-pm-btn-save {
+        width: 100%;
+        justify-content: center;
+    }
+}
