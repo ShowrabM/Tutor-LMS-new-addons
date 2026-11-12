@@ -1,4 +1,19 @@
 /* Layout */
+.stm-free-course-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  width: 100%;
+}
+.stm-free-course-grid .stm-course-card { min-width: 0; }
+.stm-free-course-grid .stm-card-thumb { aspect-ratio: 16 / 10; height: auto; }
+.stm-free-course-grid .stm-card-thumb img { width: 100%; height: 100%; object-fit: cover; }
+@media (max-width: 1024px) {
+  .stm-free-course-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .stm-free-course-grid { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+}
 .stm-archive-wrap {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr) 230px;

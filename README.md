@@ -14,6 +14,31 @@ You can also place the link manually with:
 
 ## Shortcodes
 
+### Free courses (Elementor landing page)
+
+```text
+[stm_free_courses limit="6"]
+```
+
+Displays up to 24 published Tutor courses whose `_tutor_course_price_type` is
+`free`, newest first. Default: six cards. Course access and enrollment continue
+to be handled by Tutor and the site's membership configuration. This listing
+does not change any course's price or permissions.
+
+Course and testimonial styles/scripts are detected in nested Elementor
+widgets as well as ordinary WordPress content. Keep Elementor and Elementor
+Pro active for the landing page, and Tutor LMS with Tutor LMS Elementor Addons
+for the existing course widgets.
+
+The repaired landing page is in `templates/elementor/MyTennisCloud-Landing-2026-11-12.json`.
+Update this plugin before importing that template. Import it into Elementor's
+Saved Templates, replace the homepage's existing sections, then regenerate
+Elementor CSS/data and clear the page cache. Do not insert it below the old
+homepage, which would duplicate the layout. Saved testimonials use
+`[tdl_testimonial_carousel limit="10" autoplay="false"]`; manage the entries
+through the plugin's existing dashboard. Video popups in this template fetch
+their MP4 source only when opened and release it on close.
+
 ### Course archive
 
 Use this shortcode to show the custom Tutor LMS course listing with category filters:

@@ -296,16 +296,16 @@ function stm_course_archive_shortcode( $atts ) {
         'stm_tutor_courses'
     );
 
-    stm_enqueue_course_assets();
+    stm_enqueue_course_assets( true );
 
     return stm_get_course_archive_markup( $atts );
 }
 
 add_action( 'wp_enqueue_scripts', 'stm_enqueue_course_assets' );
-function stm_enqueue_course_assets() {
+function stm_enqueue_course_assets( $force = false ) {
     static $assets_enqueued = false;
 
-    if ( $assets_enqueued || ! stm_should_load_course_assets() ) {
+    if ( $assets_enqueued || ( ! $force && ! stm_should_load_course_assets() ) ) {
         return;
     }
 
@@ -386,7 +386,7 @@ function stm_should_load_course_assets() {
         return false;
     }
 
-    return has_shortcode( $post->post_content, 'stm_tutor_courses' );
+    return stm_page_has_shortcode( 'stm_tutor_courses' ) || stm_page_has_shortcode( 'stm_free_courses' );
 }
 
 function stm_normalize_posts_per_page( $posts_per_page ) {

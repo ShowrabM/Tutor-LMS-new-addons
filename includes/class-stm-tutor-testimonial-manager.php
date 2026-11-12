@@ -295,7 +295,7 @@ class STM_Tutor_Testimonial_Manager {
             return false;
         }
 
-        return has_shortcode( $post->post_content, $shortcode_tag );
+        return stm_page_has_shortcode( $shortcode_tag );
     }
 
     private function get_current_url() {

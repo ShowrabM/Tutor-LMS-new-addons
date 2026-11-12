@@ -18,7 +18,8 @@ if ( function_exists( 'tutor_utils' ) ) {
 
 $stm_pmpro_access = function_exists( 'stm_user_has_pmpro_course_access' ) && stm_user_has_pmpro_course_access( $stm_post_id );
 $stm_has_access   = $stm_pmpro_access || ( function_exists( 'stm_user_has_course_access' ) && stm_user_has_course_access( $stm_post_id ) );
-$stm_price        = $stm_pmpro_access ? 'Already Subscribed' : ( $stm_has_access ? 'Enrolled' : 'Buy Membership' );
+$stm_is_free      = 'free' === get_post_meta( $stm_post_id, '_tutor_course_price_type', true );
+$stm_price        = $stm_pmpro_access ? 'Already Subscribed' : ( $stm_has_access ? 'Enrolled' : ( $stm_is_free ? 'Start Free Course' : 'Buy Membership' ) );
 ?>
 
 <div class="stm-course-card">
