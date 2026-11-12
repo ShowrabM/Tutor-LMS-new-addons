@@ -1,296 +1,69 @@
-/**
- * STM Tutor Popup Maker - Frontend Styles
- * Pure Vanilla CSS (Lightweight, High Responsiveness, Accessible)
- */
+.stm-offer,.stm-offer *{box-sizing:border-box}
+.stm-offer[hidden],.stm-offer [hidden]{display:none!important}
+body.stm-offer-locked{overflow:hidden!important}
+.stm-offer{position:fixed;inset:0;z-index:9999999;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Manrope,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#182b23;text-align:left;line-height:1.5}
+.stm-offer-backdrop{position:absolute;inset:0;background:#071c16b8;backdrop-filter:blur(7px)}
+.stm-offer-dialog{position:relative;display:grid;grid-template-columns:40% 60%;width:min(800px,100%);max-height:calc(100dvh - 48px);overflow:auto;background:#fff;border-radius:22px;box-shadow:0 32px 100px #0005;isolation:isolate;animation:stmOfferIn .25s ease-out}
+.stm-offer .stm-offer-close{position:absolute;right:14px;top:14px;z-index:3;display:grid;place-items:center;width:34px;height:34px;padding:8px;background:#f0f3f0;color:#243b30;border:1px solid #dfe6e0;border-radius:50%;cursor:pointer;box-shadow:none}
+.stm-offer .stm-offer-close:hover{background:#dfe6e0;color:#152a20;border-color:#cbd5cf}
+.stm-offer svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.stm-offer-visual{position:relative;display:flex;flex-direction:column;justify-content:space-between;gap:90px;min-height:480px;overflow:hidden;background:radial-gradient(ellipse at 80% 20%,#3e6754 0,transparent 65%),#122f24;padding:30px;color:#fff}
+.stm-offer-visual img{position:absolute;inset:0;width:100%;height:100%;max-width:none;object-fit:cover;object-position:center}
+.stm-offer-visual.has-image:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,#0b251c85,transparent 35%,#0b251ce6)}
+.stm-offer-brand,.stm-offer-visual-note{position:relative;z-index:1}
+.stm-offer-brand{font-size:12px;font-weight:800;letter-spacing:1.8px}
+.stm-offer-brand span{display:block;font-size:8px;letter-spacing:1.3px;opacity:.8;margin-top:6px}
+.stm-offer-pill{display:inline-flex;border:1px solid #ffffff50;background:#ffffff10;border-radius:30px;padding:7px 10px;font-size:9px;letter-spacing:1.1px;font-weight:700}
+.stm-offer .stm-offer-visual-note p{font-size:27px;line-height:1.25;letter-spacing:-.8px;font-weight:600;color:#fff;margin:18px 0}
+.stm-offer-rule{display:block;width:40px;height:3px;background:#ff9a5c;border-radius:3px}
+.stm-offer-body{padding:44px 36px 32px;min-width:0;align-self:center}
+.stm-offer-eyebrow{display:block;font-size:9px;font-weight:800;letter-spacing:1.6px;color:#a34311;margin-bottom:12px}
+.stm-offer .stm-offer-intro h2{font-family:inherit;font-size:30px;line-height:1.15;font-weight:750;letter-spacing:-1px;color:#172e23;margin:0 0 14px;overflow-wrap:anywhere}
+.stm-offer .stm-offer-intro p{font-size:13px;line-height:1.7;color:#69736d;margin:0 0 24px}
+.stm-offer-form{display:grid;gap:14px;margin:0}
+.stm-offer .stm-offer-form label{display:grid;gap:6px;color:#33473b;font-size:11px;font-weight:650;margin:0}
+.stm-offer-form label>.stm-offer-label{color:#33473b}
+.stm-offer-form .stm-offer-label em{color:#b34b16;font-style:normal}
+.stm-offer-form label small{font-size:10px;font-weight:400;color:#879289}
+.stm-offer .stm-offer-form input:not([type=hidden]),.stm-offer .stm-offer-form textarea{width:100%;min-width:0;background:#f8faf7;color:#182e22;border:1px solid #dde5dd;border-radius:9px;font:400 13px/1.5 inherit;font-family:inherit;font-size:13px;line-height:1.5;padding:11px 12px;margin:0;box-shadow:none}
+.stm-offer .stm-offer-form input:focus,.stm-offer .stm-offer-form textarea:focus{outline:2px solid #d8753c55;outline-offset:1px;border-color:#b96534;background:#fff}
+.stm-offer .stm-offer-form input::placeholder,.stm-offer .stm-offer-form textarea::placeholder{color:#929b95;opacity:1}
+.stm-offer .stm-offer-submit,.stm-offer .stm-offer-gift{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:13px 16px;border:1px solid #b24912;border-radius:9px;background:#b84b14;color:#fff;font:650 13px/1.4 inherit;font-family:inherit;font-size:13px;font-weight:650;line-height:1.4;text-decoration:none;box-shadow:0 4px 10px #b84b141a;cursor:pointer;margin:2px 0 0}
+.stm-offer .stm-offer-submit:hover,.stm-offer .stm-offer-gift:hover{background:#963b0c;color:#fff;border-color:#963b0c}
+.stm-offer .stm-offer-submit:disabled{opacity:.65;cursor:wait}
+.stm-offer .stm-offer-fine{font-size:10px;line-height:1.6;color:#8a938d;margin:0;text-align:center}
+.stm-offer .stm-offer-error{margin:0;padding:10px;background:#fff1ec;color:#a13519;border-radius:6px;font-size:12px}
+.stm-offer-honey{position:absolute!important;left:-9999px!important;width:1px!important;height:1px!important;overflow:hidden!important}
+.stm-offer-success{padding-top:8px}
+.stm-offer-check{display:grid;place-items:center;width:44px;height:44px;background:#e9f3e8;color:#2a6840;border-radius:50%;font-size:22px;margin:0 0 18px}
+.stm-offer .stm-offer-success h3{font-size:24px;line-height:1.2;color:#173725;margin:0 0 12px;letter-spacing:-.5px;font-family:inherit}
+.stm-offer .stm-offer-success p{font-size:13px;color:#667267;line-height:1.7;margin:0 0 20px;overflow-wrap:anywhere}
+.stm-offer-gift-note{display:block;font-size:10px;color:#7c8980;margin-top:10px}
+.stm-offer .stm-offer-done{display:block;font:inherit;font-size:12px;color:#476252;padding:6px 0;background:none;border:0;text-decoration:underline;cursor:pointer;margin-top:20px}
+.stm-offer button:focus-visible,.stm-offer a:focus-visible{outline:2px solid #dd905f;outline-offset:3px}
+@keyframes stmOfferIn{from{opacity:0;transform:translateY(12px) scale(.98)}to{opacity:1;transform:none}}
+@media(max-width:600px){.stm-offer{padding:16px}.stm-offer-dialog{display:block;width:min(420px,100%);max-height:calc(100dvh - 32px);border-radius:16px}.stm-offer-visual{min-height:150px;height:150px;padding:22px;gap:0}.stm-offer-visual-note{display:none}.stm-offer-brand{font-size:11px;margin-top:auto}.stm-offer-visual.has-image:after{background:linear-gradient(180deg,transparent,#0b251caa)}.stm-offer-body{padding:27px 24px 24px}.stm-offer .stm-offer-intro h2{font-size:27px}.stm-offer .stm-offer-close{background:#ffffffed;border-color:#fff8;right:12px;top:12px}.stm-offer .stm-offer-intro p{margin-bottom:20px}}
 
-/* Scroll lock on body */
-body.stm-pm-scroll-locked {
-    overflow: hidden !important;
-    touch-action: none;
-}
-
-/* Outer Backdrop & Container */
-.stm-pm-modal-root {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 9999999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    box-sizing: border-box;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.28s;
-}
-
-.stm-pm-modal-root.stm-pm-open {
-    opacity: 1;
-    visibility: visible;
-}
-
-/* 100% Viewport Overlay Backdrop */
-.stm-pm-modal-backdrop {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(15, 23, 42, 0.72);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    cursor: pointer;
-}
-
-/* Centered Modal Container */
-.stm-pm-modal-dialog {
-    position: relative;
-    width: 90%;
-    max-width: 440px;
-    max-height: 90vh;
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
-    overflow-y: auto;
-    overflow-x: hidden;
-    z-index: 2;
-    box-sizing: border-box;
-    transform: scale(0.92) translateY(12px);
-    transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-    color: #1e293b;
-    -webkit-overflow-scrolling: touch;
-}
-
-.stm-pm-modal-root.stm-pm-open .stm-pm-modal-dialog {
-    transform: scale(1) translateY(0);
-}
-
-/* Prominent Close Button */
-.stm-pm-modal-close {
-    position: absolute;
-    top: 12px;
-    right: 12px;
-    width: 32px;
-    height: 32px;
-    background: rgba(15, 23, 42, 0.55);
-    color: #ffffff;
-    border: none;
-    border-radius: 50%;
-    font-size: 22px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    z-index: 10;
-    transition: background 0.18s ease, transform 0.18s ease;
-    padding: 0;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
-}
-
-.stm-pm-modal-close:hover,
-.stm-pm-modal-close:focus {
-    background: rgba(15, 23, 42, 0.85);
-    transform: scale(1.08);
-    outline: none;
-}
-
-/* Top Banner Image */
-.stm-pm-banner-wrap {
-    width: 100%;
-    overflow: hidden;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-    background: #f1f5f9;
-}
-
-.stm-pm-banner-img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 200px;
-    object-fit: cover;
-    object-position: center;
-}
-
-/* Modal Content Area */
-.stm-pm-modal-body {
-    padding: 24px 24px 28px;
-    box-sizing: border-box;
-}
-
-.stm-pm-title {
-    margin: 0 0 8px 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #0f172a;
-    line-height: 1.3;
-    text-align: center;
-}
-
-.stm-pm-subtitle {
-    margin: 0 0 20px 0;
-    font-size: 14px;
-    color: #64748b;
-    line-height: 1.5;
-    text-align: center;
-}
-
-/* Form Styles */
-.stm-pm-form {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.stm-pm-field-group {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    text-align: left;
-}
-
-.stm-pm-field-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #334155;
-}
-
-.stm-pm-field-label .stm-pm-required {
-    color: #ef4444;
-    margin-left: 2px;
-}
-
-.stm-pm-input,
-.stm-pm-textarea {
-    width: 100%;
-    padding: 10px 14px;
-    font-size: 14px;
-    line-height: 1.4;
-    border: 1.5px solid #cbd5e1;
-    border-radius: 8px;
-    background: #f8fafc;
-    color: #0f172a;
-    box-sizing: border-box;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
-    font-family: inherit;
-}
-
-.stm-pm-input:focus,
-.stm-pm-textarea:focus {
-    outline: none;
-    border-color: #0284c7;
-    background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.16);
-}
-
-.stm-pm-textarea {
-    resize: vertical;
-    min-height: 72px;
-}
-
-/* Submit Button */
-.stm-pm-submit-btn {
-    width: 100%;
-    padding: 12px 18px;
-    background: #0284c7;
-    color: #ffffff;
-    font-size: 15px;
-    font-weight: 600;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transition: background 0.18s ease, transform 0.15s ease, box-shadow 0.18s ease;
-    margin-top: 6px;
-    box-shadow: 0 4px 12px rgba(2, 132, 199, 0.28);
-}
-
-.stm-pm-submit-btn:hover:not(:disabled) {
-    background: #0369a1;
-    transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(2, 132, 199, 0.35);
-}
-
-.stm-pm-submit-btn:active:not(:disabled) {
-    transform: translateY(0);
-}
-
-.stm-pm-submit-btn:disabled {
-    opacity: 0.75;
-    cursor: not-allowed;
-    background: #64748b;
-    box-shadow: none;
-}
-
-/* Inline Spinner */
-.stm-pm-btn-spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.35);
-    border-top-color: #ffffff;
-    border-radius: 50%;
-    animation: stm-pm-spin 0.7s linear infinite;
-    display: inline-block;
-}
-
-@keyframes stm-pm-spin {
-    to { transform: rotate(360deg); }
-}
-
-/* Notice Banners */
-.stm-pm-notice {
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    line-height: 1.4;
-    text-align: center;
-    box-sizing: border-box;
-    animation: stm-pm-fade-in 0.2s ease-out;
-}
-
-.stm-pm-notice-success {
-    background: #ecfdf5;
-    border: 1px solid #6ee7b7;
-    color: #065f46;
-    font-weight: 500;
-    padding: 20px 16px;
-}
-
-.stm-pm-notice-error {
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: #991b1b;
-    margin-bottom: 12px;
-}
-
-@keyframes stm-pm-fade-in {
-    from { opacity: 0; transform: translateY(-4px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* Mobile Responsive Optimization */
-@media (max-width: 480px) {
-    .stm-pm-modal-dialog {
-        width: 94%;
-        max-width: 100%;
-        border-radius: 10px;
-    }
-    .stm-pm-modal-body {
-        padding: 20px 16px 22px;
-    }
-    .stm-pm-title {
-        font-size: 18px;
-    }
-    .stm-pm-banner-img {
-        max-height: 160px;
-    }
-}
+/* Neutral Tutor LMS styling: the uploaded campaign image remains the visual
+ * focus while controls use Tutor's familiar primary blue. */
+.stm-offer{color:#212327}
+.stm-offer-backdrop{background:#1f2430b8}
+.stm-offer .stm-offer-close{background:#f4f5f7;color:#41454f;border-color:#dcdfe5}
+.stm-offer .stm-offer-close:hover{background:#e8eaf0;color:#212327;border-color:#c9cdd5}
+.stm-offer-visual{background:linear-gradient(145deg,#3e64de,#2749b4);color:#fff}
+.stm-offer-visual.has-image:after{background:linear-gradient(180deg,#1d2a535c,transparent 40%,#18234bbf)}
+.stm-offer-rule{background:#fff}
+.stm-offer-eyebrow{color:#3e64de}
+.stm-offer .stm-offer-intro h2{color:#212327}
+.stm-offer .stm-offer-form label,.stm-offer-form label>.stm-offer-label{color:#41454f}
+.stm-offer-form .stm-offer-label em{color:#e53935}
+.stm-offer .stm-offer-form input:not([type=hidden]),.stm-offer .stm-offer-form textarea{background:#fff;color:#212327;border-color:#dcdfe5}
+.stm-offer .stm-offer-form input:focus,.stm-offer .stm-offer-form textarea:focus{outline-color:#3e64de40;border-color:#3e64de}
+.stm-offer .stm-offer-submit,.stm-offer .stm-offer-gift{background:#3e64de;border-color:#3e64de;box-shadow:0 4px 12px #3e64de24}
+.stm-offer .stm-offer-submit:hover,.stm-offer .stm-offer-gift:hover{background:#2f4fc0;border-color:#2f4fc0}
+.stm-offer-check{background:#e8f7ef;color:#23834d}
+.stm-offer .stm-offer-success h3{color:#212327}
+.stm-offer .stm-offer-done{color:#3e64de}
+.stm-offer button:focus-visible,.stm-offer a:focus-visible{outline-color:#3e64de}
+@media(max-width:600px){.stm-offer-visual.has-image:after{background:linear-gradient(180deg,transparent,#18234bb0)}}
+@media(prefers-reduced-motion:reduce){.stm-offer-dialog{animation:none}}

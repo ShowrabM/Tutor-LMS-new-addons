@@ -183,6 +183,13 @@
         perPage = getPerPage();
         width = cardWidth();
         Array.prototype.forEach.call(cards, function(card) { card.style.flexBasis = width + 'px'; });
+        Array.prototype.forEach.call(cards, function(card) {
+          var quote = card.querySelector('.tdl-tc-quote');
+          var button = card.querySelector('.tdl-tc-read-more');
+          if (quote && button && !card.classList.contains('is-expanded')) {
+            button.hidden = quote.scrollHeight <= quote.clientHeight + 1;
+          }
+        });
         buildDots();
         goTo(current);
       }
@@ -209,6 +216,16 @@
       }
 
       $(wrap).find('.tdl-tc-arrow.prev').on('click', function() { goTo(current - perPage); resetAuto(); });
+      $(wrap).find('.tdl-tc-read-more').on('click', function(e) {
+        e.stopPropagation();
+        var expanded = this.getAttribute('aria-expanded') !== 'true';
+        var card = $(this).closest('.tdl-tc-card');
+        var quote = card.find('.tdl-tc-quote').get(0);
+        card.toggleClass('is-expanded', expanded);
+        if (!expanded && quote) { quote.scrollTop = 0; }
+        this.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+        this.textContent = this.getAttribute(expanded ? 'data-less' : 'data-more');
+      });
       $(wrap).find('.tdl-tc-arrow.next').on('click', function() { var next = current + perPage; goTo(next >= total ? 0 : next); resetAuto(); });
       $(track).on('mousedown', onPointerDown);
       $(track).on('mousemove', onPointerMove);

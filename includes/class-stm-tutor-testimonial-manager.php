@@ -458,6 +458,7 @@ class STM_Tutor_Testimonial_Manager {
         $website   = get_post_meta( $post->ID, '_tdl_t_website', true );
         $video_url = get_post_meta( $post->ID, '_tdl_t_video', true );
         $thumbnail = get_post_meta( $post->ID, '_tdl_t_thumbnail', true );
+        $quote_id  = wp_unique_id( 'tdl-quote-' );
         $delete_url = '';
 
         if ( $this->can_delete_testimonial( $post->ID ) ) {
@@ -496,7 +497,8 @@ class STM_Tutor_Testimonial_Manager {
 
             <div class="tdl-tc-body">
                 <?php if ( ! empty( $quote ) ) : ?>
-                    <p class="tdl-tc-quote"><?php echo esc_html( $quote ); ?></p>
+                    <p class="tdl-tc-quote" id="<?php echo esc_attr( $quote_id ); ?>"><?php echo esc_html( $quote ); ?></p>
+                    <button type="button" class="tdl-tc-read-more" aria-expanded="false" aria-controls="<?php echo esc_attr( $quote_id ); ?>" data-more="<?php esc_attr_e( 'Read more', 'tutor' ); ?>" data-less="<?php esc_attr_e( 'Show less', 'tutor' ); ?>" hidden><?php esc_html_e( 'Read more', 'tutor' ); ?></button>
                 <?php endif; ?>
                 <div class="tdl-tc-stars"><?php echo wp_kses_post( $this->stars_html( $rating ) ); ?></div>
                 <div class="tdl-tc-footer">

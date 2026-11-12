@@ -12,7 +12,32 @@ You can also place the link manually with:
 [stm_gsc_dashboard_link]
 ```
 
-## Shortcodes
+## Popup & Leads dashboard (1.3.0)
+
+Administrators can open **Tutor Dashboard → Popup & Leads** to see all popups,
+active/paused counts and lead totals. Each popup can be created, edited,
+previewed, duplicated, activated, paused or moved to trash independently.
+Trashing a popup preserves its media and leads. Copies start paused.
+
+Select a JPG/PNG/WebP/GIF banner and an optional PDF, DOC, DOCX, ODT or TXT
+gift document from WordPress Media Library, or upload either from a device.
+Media Library selection stays available after an asset is selected.
+After successful form submission, visitors immediately receive a signed gift
+download link on the confirmation screen. The link lasts 24 hours. This is
+on-page delivery; no email is sent. WordPress Media Library files retain their
+normal public-upload access if their original URL is known.
+
+Every active popup has its own form, delay, frequency and priority. Higher
+priorities display first, one popup at a time, with a short gap between offers.
+New popups start paused. Email is required; name, phone and message are optional.
+The **Captured Leads** tab filters by campaign and exports matching leads as CSV.
+The visitor popup stays off dashboard pages. Banner images load when opened.
+Preview works for drafts without recording leads or changing campaign status.
+
+Testimonial cards now show a compact six-line preview with **Read more / Show
+less** controls. The complete original testimonial remains saved and readable.
+
+## Course and testimonial shortcodes
 
 ### Free courses (Elementor landing page)
 

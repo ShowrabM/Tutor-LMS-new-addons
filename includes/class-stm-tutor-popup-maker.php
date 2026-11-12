@@ -1,418 +1,85 @@
 <?php
-/**
- * STM Tutor Popup Maker
- * 
- * Production-ready Popup Maker module for Tutor LMS Customization.
- * Features:
- * - Module A: Custom Post Type `popup_maker` with native wp.media Meta Box & Display Controls.
- * - Module B: Dedicated custom table `{$wpdb->prefix}popup_leads` via dbDelta on activation.
- * - Module C: Dynamic, accessible frontend popup engine with pure Vanilla JS & CSS (0 jQuery).
- * - Module D: Secure AJAX lead capture & CSV export engine.
- */
-
-if ( ! defined( 'ABSPATH' ) ) {
-    exit;
-}
+/** Popup campaigns, lead capture and gift delivery for the Tutor dashboard. */
+defined( 'ABSPATH' ) || exit;
 
 class STM_Tutor_Popup_Maker {
-    const POST_TYPE    = 'popup_maker';
-    const TABLE_NAME   = 'popup_leads';
-    const DB_VERSION   = '1.0.0';
-    const NONCE_ACTION = 'stm_popup_maker_meta_save';
-    const NONCE_NAME   = 'stm_popup_maker_nonce';
-    const LEAD_NONCE   = 'stm_popup_lead_nonce';
+    const POST_TYPE = 'popup_maker';
+    const TABLE_NAME = 'popup_leads';
+    const DB_VERSION = '1.0.0';
+    const LEAD_NONCE = 'stm_popup_lead_nonce';
+    const DASH_NONCE = 'stm_popup_dashboard_nonce';
 
     public function __construct() {
-        // Module A: Custom Post Type & Admin UI
         add_action( 'init', array( $this, 'register_post_type' ) );
-        add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
-        add_action( 'save_post_' . self::POST_TYPE, array( $this, 'save_meta_box_data' ), 10, 2 );
-        add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
-
-        // Admin Custom Columns
-        add_filter( 'manage_' . self::POST_TYPE . '_posts_columns', array( $this, 'set_custom_columns' ) );
-        add_action( 'manage_' . self::POST_TYPE . '_posts_custom_column', array( $this, 'render_custom_columns' ), 10, 2 );
-
-        // Module B: DB Table check
-        add_action( 'admin_init', array( $this, 'maybe_create_table' ) );
-
-        // Module C: Frontend Display Engine
+        add_action( 'init', array( $this, 'maybe_initialize' ), 99 );
         add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_frontend_assets' ) );
         add_action( 'wp_footer', array( $this, 'render_frontend_popup' ) );
-
-        // Module D: Lead Submission & CSV Export
-        add_action( 'wp_ajax_stm_submit_popup_lead', array( $this, 'handle_submit_lead' ) );
-        add_action( 'wp_ajax_nopriv_stm_submit_popup_lead', array( $this, 'handle_submit_lead' ) );
+        add_action( 'template_redirect', array( $this, 'render_preview' ), 1 );
+        add_action( 'admin_init', array( $this, 'prepare_ajax_response' ), -100 );
+        add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
         add_action( 'admin_menu', array( $this, 'register_admin_submenus' ) );
+        add_action( 'save_post_' . self::POST_TYPE, array( $this, 'invalidate_popup_cache' ) );
+        add_filter( 'tutor_dashboard/nav_items_all', array( $this, 'dashboard_nav' ) );
+        add_filter( 'load_dashboard_template_part_from_other_location', array( $this, 'dashboard_template' ) );
+        add_filter( 'body_class', array( $this, 'dashboard_body_class' ) );
+        foreach ( array(
+            'stm_save_dashboard_popup_settings' => 'handle_save_dashboard_settings',
+            'stm_pm_dashboard_upload_image' => 'handle_dashboard_image_upload',
+            'stm_pm_upload_asset' => 'handle_dashboard_image_upload',
+            'stm_pm_campaign_action' => 'handle_campaign_action',
+            'stm_submit_popup_lead' => 'handle_submit_lead',
+        ) as $action => $method ) {
+            add_action( 'wp_ajax_' . $action, array( $this, $method ) );
+        }
+        add_action( 'wp_ajax_nopriv_stm_submit_popup_lead', array( $this, 'handle_submit_lead' ) );
         add_action( 'admin_post_download_popup_leads_csv', array( $this, 'handle_download_csv' ) );
-
-        // Tutor LMS Dashboard Integration
-        add_action( 'wp_ajax_stm_save_dashboard_popup_settings', array( $this, 'handle_save_dashboard_settings' ) );
-        add_action( 'wp_ajax_stm_pm_dashboard_upload_image', array( $this, 'handle_dashboard_image_upload' ) );
+        add_action( 'admin_post_stm_popup_download_gift', array( $this, 'handle_download_gift' ) );
+        add_action( 'admin_post_nopriv_stm_popup_download_gift', array( $this, 'handle_download_gift' ) );
     }
 
-    /* ==========================================================================
-       MODULE A: Custom Post Type & Admin UI
-       ========================================================================== */
+    public static function dashboard_url() {
+        return function_exists( 'tutor_utils' ) ? trailingslashit( tutor_utils()->get_tutor_dashboard_page_permalink() ) . 'popup-maker/' : home_url( '/dashboard/popup-maker/' );
+    }
 
-    /**
-     * Register Custom Post Type: popup_maker
-     */
     public function register_post_type() {
-        $labels = array(
-            'name'                  => _x( 'Popup Maker', 'Post type general name', 'tutor' ),
-            'singular_name'         => _x( 'Popup', 'Post type singular name', 'tutor' ),
-            'menu_name'             => _x( 'Popup Maker', 'Admin Menu text', 'tutor' ),
-            'name_admin_bar'        => _x( 'Popup', 'Add New on Toolbar', 'tutor' ),
-            'add_new'               => __( 'Add New Popup', 'tutor' ),
-            'add_new_item'          => __( 'Add New Popup', 'tutor' ),
-            'new_item'              => __( 'New Popup', 'tutor' ),
-            'edit_item'             => __( 'Edit Popup', 'tutor' ),
-            'view_item'             => __( 'View Popup', 'tutor' ),
-            'all_items'             => __( 'All Popups', 'tutor' ),
-            'search_items'          => __( 'Search Popups', 'tutor' ),
-            'not_found'             => __( 'No popups found.', 'tutor' ),
-            'not_found_in_trash'    => __( 'No popups found in Trash.', 'tutor' ),
-        );
-
-        $args = array(
-            'labels'             => $labels,
-            'public'             => false,
-            'publicly_queryable' => false,
-            'show_ui'            => true,
-            'show_in_menu'       => true,
-            'query_var'          => false,
-            'rewrite'            => false,
-            'capability_type'    => 'post',
-            'has_archive'        => false,
-            'hierarchical'       => false,
-            'menu_position'      => 27,
-            'menu_icon'          => 'dashicons-slides',
-            'supports'           => array( 'title' ),
-        );
-
-        register_post_type( self::POST_TYPE, $args );
+        register_post_type( self::POST_TYPE, array(
+            'labels' => array( 'name' => 'Popups', 'singular_name' => 'Popup', 'add_new_item' => 'Add popup' ),
+            'public' => false, 'show_ui' => true, 'show_in_menu' => true,
+            'menu_icon' => 'dashicons-megaphone', 'supports' => array( 'title' ),
+            'capabilities' => array_fill_keys( array( 'edit_post', 'read_post', 'delete_post', 'edit_posts', 'edit_others_posts', 'publish_posts', 'read_private_posts', 'delete_posts', 'delete_private_posts', 'delete_published_posts', 'delete_others_posts', 'edit_private_posts', 'edit_published_posts', 'create_posts' ), 'manage_options' ),
+            'map_meta_cap' => false, 'rewrite' => false,
+        ) );
     }
 
-    /**
-     * Register Meta Box: Popup Builder Settings
-     */
-    public function register_meta_boxes() {
-        add_meta_box(
-            'stm_popup_builder_settings',
-            __( 'Popup Builder Settings', 'tutor' ),
-            array( $this, 'render_meta_box' ),
-            self::POST_TYPE,
-            'normal',
-            'high'
-        );
+    public function dashboard_nav( $items ) {
+        $items['popup-maker'] = array( 'title' => 'Popup & Leads', 'auth_cap' => 'manage_options', 'icon' => 'tutor-icon-email', 'show_ui' => current_user_can( 'manage_options' ) );
+        return $items;
     }
 
-    /**
-     * Render the Meta Box UI (Media uploader, checkboxes, display controls)
-     */
-    public function render_meta_box( $post ) {
-        wp_nonce_field( self::NONCE_ACTION, self::NONCE_NAME );
-
-        $banner_url     = get_post_meta( $post->ID, '_stm_pm_banner_url', true );
-        $banner_id      = get_post_meta( $post->ID, '_stm_pm_banner_id', true );
-        $subtitle       = get_post_meta( $post->ID, '_stm_pm_subtitle', true );
-        $field_name     = get_post_meta( $post->ID, '_stm_pm_field_name', true );
-        $field_phone    = get_post_meta( $post->ID, '_stm_pm_field_phone', true );
-        $field_message  = get_post_meta( $post->ID, '_stm_pm_field_message', true );
-        $delay_sec      = get_post_meta( $post->ID, '_stm_pm_delay_sec', true );
-        $frequency_days = get_post_meta( $post->ID, '_stm_pm_frequency_days', true );
-        $cta_text       = get_post_meta( $post->ID, '_stm_pm_cta_text', true );
-
-        // Defaults for new post
-        if ( '' === $delay_sec ) {
-            $delay_sec = 2;
-        }
-        if ( '' === $frequency_days ) {
-            $frequency_days = 7;
-        }
-        if ( '' === $cta_text ) {
-            $cta_text = __( 'Submit', 'tutor' );
-        }
-        ?>
-        <div class="stm-pm-metabox-wrapper">
-            
-            <!-- 1. Media Uploader Section -->
-            <div class="stm-pm-section">
-                <h4 class="stm-pm-section-title">
-                    <span class="dashicons dashicons-format-image"></span>
-                    <?php esc_html_e( 'Media Uploader (Banner Image)', 'tutor' ); ?>
-                </h4>
-                <p class="stm-pm-section-desc"><?php esc_html_e( 'Upload or select a banner image to be prominently displayed at the top of the popup modal.', 'tutor' ); ?></p>
-
-                <div class="stm-pm-media-uploader">
-                    <input type="hidden" name="_stm_pm_banner_url" id="stm_pm_banner_url" value="<?php echo esc_url( $banner_url ); ?>">
-                    <input type="hidden" name="_stm_pm_banner_id" id="stm_pm_banner_id" value="<?php echo esc_attr( $banner_id ); ?>">
-
-                    <div class="stm-pm-banner-preview-box" id="stm_pm_banner_preview_box" style="<?php echo empty( $banner_url ) ? 'display:none;' : ''; ?>">
-                        <img src="<?php echo esc_url( $banner_url ); ?>" id="stm_pm_banner_preview_img" class="stm-pm-banner-preview-img" alt="Banner Preview">
-                        <div class="stm-pm-media-actions">
-                            <button type="button" class="button button-secondary" id="stm_pm_remove_banner_btn">
-                                <span class="dashicons dashicons-trash" style="vertical-align: middle; margin-top:-2px;"></span>
-                                <?php esc_html_e( 'Remove Image', 'tutor' ); ?>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <button type="button" class="button button-primary" id="stm_pm_upload_banner_btn">
-                            <span class="dashicons dashicons-upload" style="vertical-align: middle; margin-top:-2px;"></span>
-                            <?php echo empty( $banner_url ) ? esc_html__( 'Upload / Select Banner Image', 'tutor' ) : esc_html__( 'Change Banner Image', 'tutor' ); ?>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Content & Text Settings -->
-            <div class="stm-pm-section">
-                <h4 class="stm-pm-section-title">
-                    <span class="dashicons dashicons-editor-paragraph"></span>
-                    <?php esc_html_e( 'Popup Subtitle / Description', 'tutor' ); ?>
-                </h4>
-                <p class="stm-pm-section-desc"><?php esc_html_e( 'The post title is used as the popup headline. Enter an optional subtitle or short offer pitch below.', 'tutor' ); ?></p>
-
-                <div class="stm-pm-control-group">
-                    <label for="stm_pm_subtitle"><?php esc_html_e( 'Subtitle / Offer Text', 'tutor' ); ?></label>
-                    <input type="text" name="_stm_pm_subtitle" id="stm_pm_subtitle" value="<?php echo esc_attr( $subtitle ); ?>" placeholder="<?php esc_attr_e( 'e.g. Join our tennis academy today and receive 15% off your first coaching session!', 'tutor' ); ?>">
-                </div>
-            </div>
-
-            <!-- 3. Form Fields Checklist -->
-            <div class="stm-pm-section">
-                <h4 class="stm-pm-section-title">
-                    <span class="dashicons dashicons-forms"></span>
-                    <?php esc_html_e( 'Form Fields Checklist', 'tutor' ); ?>
-                </h4>
-                <p class="stm-pm-section-desc"><?php esc_html_e( 'Select which form fields will be generated dynamically inside the popup modal. Email is always required.', 'tutor' ); ?></p>
-
-                <div class="stm-pm-checklist">
-                    <!-- Name Field -->
-                    <label class="stm-pm-checkbox-item">
-                        <input type="checkbox" name="_stm_pm_field_name" value="1" <?php checked( 1, $field_name ); ?>>
-                        <span><strong><?php esc_html_e( 'Name Field', 'tutor' ); ?></strong> &mdash; <?php esc_html_e( 'Text input for full visitor name', 'tutor' ); ?></span>
-                    </label>
-
-                    <!-- Email Field (Default Checked and Enforced Required) -->
-                    <label class="stm-pm-checkbox-item" style="cursor: default; background: #f0fdf4; border-color: #bbf7d0;">
-                        <input type="checkbox" name="_stm_pm_field_email" id="stm_pm_field_email" value="1" checked onclick="return false;">
-                        <span><strong><?php esc_html_e( 'Email Field', 'tutor' ); ?></strong> &mdash; <?php esc_html_e( 'Email address input (Strictly Required)', 'tutor' ); ?></span>
-                        <span class="stm-pm-badge" style="background:#dcfce7; color:#15803d;"><?php esc_html_e( 'Required', 'tutor' ); ?></span>
-                    </label>
-
-                    <!-- Phone Number Field -->
-                    <label class="stm-pm-checkbox-item">
-                        <input type="checkbox" name="_stm_pm_field_phone" value="1" <?php checked( 1, $field_phone ); ?>>
-                        <span><strong><?php esc_html_e( 'Phone Number Field', 'tutor' ); ?></strong> &mdash; <?php esc_html_e( 'Telephone input for contact number', 'tutor' ); ?></span>
-                    </label>
-
-                    <!-- Message / Note Field -->
-                    <label class="stm-pm-checkbox-item">
-                        <input type="checkbox" name="_stm_pm_field_message" value="1" <?php checked( 1, $field_message ); ?>>
-                        <span><strong><?php esc_html_e( 'Message / Note Field', 'tutor' ); ?></strong> &mdash; <?php esc_html_e( 'Textarea for visitor inquiry or comments', 'tutor' ); ?></span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 4. Basic Display Controls -->
-            <div class="stm-pm-section">
-                <h4 class="stm-pm-section-title">
-                    <span class="dashicons dashicons-admin-generic"></span>
-                    <?php esc_html_e( 'Display Controls & CTA', 'tutor' ); ?>
-                </h4>
-                <p class="stm-pm-section-desc"><?php esc_html_e( 'Configure behavior, delay timing, frequency suppression, and button label.', 'tutor' ); ?></p>
-
-                <div class="stm-pm-grid-2">
-                    <div class="stm-pm-control-group">
-                        <label for="stm_pm_delay_sec"><?php esc_html_e( 'Delay Trigger (Seconds)', 'tutor' ); ?></label>
-                        <input type="number" name="_stm_pm_delay_sec" id="stm_pm_delay_sec" value="<?php echo esc_attr( $delay_sec ); ?>" min="0" max="120" step="1">
-                        <span class="description"><?php esc_html_e( 'Seconds to wait after page load before displaying the popup (e.g. 2, 5, 10).', 'tutor' ); ?></span>
-                    </div>
-
-                    <div class="stm-pm-control-group">
-                        <label for="stm_pm_frequency_days"><?php esc_html_e( 'Frequency Cap (Days)', 'tutor' ); ?></label>
-                        <input type="number" name="_stm_pm_frequency_days" id="stm_pm_frequency_days" value="<?php echo esc_attr( $frequency_days ); ?>" min="0" max="365" step="1">
-                        <span class="description"><?php esc_html_e( 'Days to suppress popup after dismissal or submission via localStorage (e.g. 7). Set to 0 to show on every visit.', 'tutor' ); ?></span>
-                    </div>
-                </div>
-
-                <div class="stm-pm-control-group" style="margin-top: 10px;">
-                    <label for="stm_pm_cta_text"><?php esc_html_e( 'Button CTA Text', 'tutor' ); ?></label>
-                    <input type="text" name="_stm_pm_cta_text" id="stm_pm_cta_text" value="<?php echo esc_attr( $cta_text ); ?>" placeholder="<?php esc_attr_e( 'Submit', 'tutor' ); ?>">
-                    <span class="description"><?php esc_html_e( 'The text displayed on the main submission button (default: "Submit").', 'tutor' ); ?></span>
-                </div>
-            </div>
-
-        </div>
-        <?php
+    public function dashboard_template( $location ) {
+        return 'popup-maker' === get_query_var( 'tutor_dashboard_page' ) ? STM_TUTOR_CUSTOMIZATION_DIR . 'templates/dashboard/popup-maker.php' : $location;
     }
 
-    /**
-     * Save Meta Box Data on `save_post_popup_maker`
-     */
-    public function save_meta_box_data( $post_id, $post ) {
-        // Nonce check
-        if ( ! isset( $_POST[ self::NONCE_NAME ] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST[ self::NONCE_NAME ] ) ), self::NONCE_ACTION ) ) {
-            return;
-        }
-
-        // Autosave check
-        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-            return;
-        }
-
-        // Capability check
-        if ( ! current_user_can( 'edit_post', $post_id ) ) {
-            return;
-        }
-
-        // Sanitize and save fields
-        $banner_url = isset( $_POST['_stm_pm_banner_url'] ) ? esc_url_raw( wp_unslash( $_POST['_stm_pm_banner_url'] ) ) : '';
-        update_post_meta( $post_id, '_stm_pm_banner_url', $banner_url );
-
-        $banner_id = isset( $_POST['_stm_pm_banner_id'] ) ? absint( $_POST['_stm_pm_banner_id'] ) : 0;
-        update_post_meta( $post_id, '_stm_pm_banner_id', $banner_id );
-
-        $subtitle = isset( $_POST['_stm_pm_subtitle'] ) ? sanitize_text_field( wp_unslash( $_POST['_stm_pm_subtitle'] ) ) : '';
-        update_post_meta( $post_id, '_stm_pm_subtitle', $subtitle );
-
-        $field_name = ! empty( $_POST['_stm_pm_field_name'] ) ? 1 : 0;
-        update_post_meta( $post_id, '_stm_pm_field_name', $field_name );
-
-        // Email is enforced required
-        update_post_meta( $post_id, '_stm_pm_field_email', 1 );
-
-        $field_phone = ! empty( $_POST['_stm_pm_field_phone'] ) ? 1 : 0;
-        update_post_meta( $post_id, '_stm_pm_field_phone', $field_phone );
-
-        $field_message = ! empty( $_POST['_stm_pm_field_message'] ) ? 1 : 0;
-        update_post_meta( $post_id, '_stm_pm_field_message', $field_message );
-
-        $delay_sec = isset( $_POST['_stm_pm_delay_sec'] ) ? absint( $_POST['_stm_pm_delay_sec'] ) : 2;
-        update_post_meta( $post_id, '_stm_pm_delay_sec', $delay_sec );
-
-        $frequency_days = isset( $_POST['_stm_pm_frequency_days'] ) ? absint( $_POST['_stm_pm_frequency_days'] ) : 7;
-        update_post_meta( $post_id, '_stm_pm_frequency_days', $frequency_days );
-
-        $cta_text = ! empty( $_POST['_stm_pm_cta_text'] ) ? sanitize_text_field( wp_unslash( $_POST['_stm_pm_cta_text'] ) ) : __( 'Submit', 'tutor' );
-        update_post_meta( $post_id, '_stm_pm_cta_text', $cta_text );
+    public function dashboard_body_class( $classes ) {
+        if ( 'popup-maker' === get_query_var( 'tutor_dashboard_page' ) && current_user_can( 'manage_options' ) ) { $classes[] = 'stm-pm-managing'; }
+        return $classes;
     }
 
-    /**
-     * Enqueue Admin Assets for the Meta Box & WP Media
-     */
-    public function enqueue_admin_assets( $hook ) {
-        global $post_type;
-
-        if ( self::POST_TYPE !== $post_type ) {
-            return;
-        }
-
-        // Native WordPress Media Uploader scripts
-        wp_enqueue_media();
-
-        wp_enqueue_style(
-            'stm-popup-admin-css',
-            STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-admin.css',
-            array(),
-            STM_TUTOR_CUSTOMIZATION_VERSION
-        );
-
-        wp_enqueue_script(
-            'stm-popup-admin-js',
-            STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-popup-admin.js',
-            array( 'jquery' ),
-            STM_TUTOR_CUSTOMIZATION_VERSION,
-            true
-        );
-    }
-
-    /**
-     * Custom columns in post list
-     */
-    public function set_custom_columns( $columns ) {
-        $new_columns = array();
-        $new_columns['cb']          = $columns['cb'];
-        $new_columns['banner']      = __( 'Banner', 'tutor' );
-        $new_columns['title']       = $columns['title'];
-        $new_columns['fields']      = __( 'Form Fields', 'tutor' );
-        $new_columns['delay']       = __( 'Delay', 'tutor' );
-        $new_columns['frequency']   = __( 'Frequency', 'tutor' );
-        $new_columns['leads_count'] = __( 'Leads Captured', 'tutor' );
-        $new_columns['date']        = $columns['date'];
-        return $new_columns;
-    }
-
-    /**
-     * Render Custom Column Data
-     */
-    public function render_custom_columns( $column, $post_id ) {
-        global $wpdb;
-
-        switch ( $column ) {
-            case 'banner':
-                $banner_url = get_post_meta( $post_id, '_stm_pm_banner_url', true );
-                if ( ! empty( $banner_url ) ) {
-                    echo '<img src="' . esc_url( $banner_url ) . '" style="width:60px;height:40px;object-fit:cover;border-radius:4px;display:block;">';
-                } else {
-                    echo '<span style="color:#94a3b8;">&mdash;</span>';
-                }
-                break;
-
-            case 'fields':
-                $badges = array();
-                if ( get_post_meta( $post_id, '_stm_pm_field_name', true ) ) {
-                    $badges[] = 'Name';
-                }
-                $badges[] = 'Email*';
-                if ( get_post_meta( $post_id, '_stm_pm_field_phone', true ) ) {
-                    $badges[] = 'Phone';
-                }
-                if ( get_post_meta( $post_id, '_stm_pm_field_message', true ) ) {
-                    $badges[] = 'Message';
-                }
-                echo '<span style="font-size:12px;color:#334155;">' . esc_html( implode( ', ', $badges ) ) . '</span>';
-                break;
-
-            case 'delay':
-                $delay = get_post_meta( $post_id, '_stm_pm_delay_sec', true );
-                echo esc_html( ( '' !== $delay ? $delay : 2 ) . 's' );
-                break;
-
-            case 'frequency':
-                $freq = get_post_meta( $post_id, '_stm_pm_frequency_days', true );
-                echo esc_html( ( '' !== $freq ? $freq : 7 ) . ' days' );
-                break;
-
-            case 'leads_count':
-                $table_name = $wpdb->prefix . self::TABLE_NAME;
-                $count = 0;
-                if ( $wpdb->get_var( $wpdb->prepare( "SHOW TABLES LIKE %s", $table_name ) ) === $table_name ) {
-                    $count = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM {$table_name} WHERE popup_id = %d", $post_id ) );
-                }
-                echo '<strong>' . esc_html( $count ) . '</strong>';
-                break;
+    public function invalidate_popup_cache() {
+        // Campaigns appear site-wide, so a status change must refresh cached pages too.
+        $content = realpath( WP_CONTENT_DIR );
+        $cache = realpath( WP_CONTENT_DIR . '/cache' );
+        if ( $content && $cache && 0 === strpos( wp_normalize_path( $cache ), trailingslashit( wp_normalize_path( $content ) ) ) ) {
+            do_action( 'wpfc_clear_all_cache' );
         }
     }
 
-    /* ==========================================================================
-       MODULE B: Database Table & Activation Hook
-       ========================================================================== */
-
-    /**
-     * Create dedicated custom table: {$wpdb->prefix}popup_leads
-     */
     public static function activate() {
         global $wpdb;
-
-        $table_name      = $wpdb->prefix . self::TABLE_NAME;
-        $charset_collate = $wpdb->get_charset_collate();
-
-        $sql = "CREATE TABLE {$table_name} (
+        $table = $wpdb->prefix . self::TABLE_NAME;
+        $charset = $wpdb->get_charset_collate();
+        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+        dbDelta( "CREATE TABLE {$table} (
             id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
             popup_id bigint(20) unsigned NOT NULL DEFAULT 0,
             name varchar(120) NOT NULL DEFAULT '',
@@ -423,637 +90,275 @@ class STM_Tutor_Popup_Maker {
             created_at datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
             PRIMARY KEY  (id),
             KEY popup_id (popup_id)
-        ) {$charset_collate};";
-
-        require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-        dbDelta( $sql );
-
+        ) {$charset};" );
         update_option( 'stm_popup_leads_db_version', self::DB_VERSION );
     }
 
-    /**
-     * Automatic fallback table check on admin_init
-     */
-    public function maybe_create_table() {
-        if ( get_option( 'stm_popup_leads_db_version' ) !== self::DB_VERSION ) {
-            self::activate();
+    public function maybe_initialize() {
+        if ( ! current_user_can( 'manage_options' ) ) { return; }
+        if ( self::DB_VERSION !== get_option( 'stm_popup_leads_db_version' ) ) { self::activate(); }
+        if ( '1' !== get_option( 'stm_popup_dashboard_route_version' ) ) {
+            flush_rewrite_rules( false );
+            update_option( 'stm_popup_dashboard_route_version', '1', false );
         }
     }
 
-    /* ==========================================================================
-       MODULE C: Dynamic Frontend Display Engine
-       ========================================================================== */
-
-    /**
-     * Helper to get active published popup
-     */
-    private function get_active_popup() {
-        $popups = get_posts( array(
-            'post_type'      => self::POST_TYPE,
-            'post_status'    => 'publish',
-            'posts_per_page' => 1,
-            'orderby'        => 'date',
-            'order'          => 'DESC',
-        ) );
-
-        return ! empty( $popups ) ? $popups[0] : null;
+    public function prepare_ajax_response() {
+        $action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
+        $actions = array( 'stm_pm_upload_asset', 'stm_pm_dashboard_upload_image', 'stm_pm_campaign_action', 'stm_save_dashboard_popup_settings', 'stm_submit_popup_lead', 'download_popup_leads_csv', 'stm_popup_download_gift' );
+        $media_actions = array( 'query-attachments', 'get-attachment', 'upload-attachment', 'save-attachment', 'save-attachment-compat', 'send-attachment-to-editor' );
+        $media_request = current_user_can( 'manage_options' ) && in_array( $action, $media_actions, true ) && 0 === strpos( (string) ( $_SERVER['HTTP_REFERER'] ?? '' ), self::dashboard_url() );
+        if ( in_array( $action, $actions, true ) || $media_request ) {
+            global $wpdb;
+            $wpdb->hide_errors(); // Keep diagnostics in logs, not JSON or document downloads.
+        }
     }
 
-    /**
-     * Enqueue Frontend Assets (Vanilla JS & CSS only when an active popup exists)
-     */
+    public static function document_mimes() {
+        return array( 'pdf' => 'application/pdf', 'doc' => 'application/msword', 'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'odt' => 'application/vnd.oasis.opendocument.text', 'txt' => 'text/plain' );
+    }
+
+    public static function get_popup_data( $id = 0 ) {
+        $defaults = array(
+            'id' => 0, 'title' => '', 'status' => 'draft', 'banner_id' => 0, 'banner_url' => '',
+            'subtitle' => '', 'field_name' => 1, 'field_phone' => 0, 'field_message' => 0,
+            'delay_sec' => 3, 'frequency_days' => 7, 'cta_text' => 'Get my free guide',
+            'gift_id' => 0, 'gift_label' => 'Download your gift', 'success_message' => 'Thank you! Your submission has been received.',
+            'priority' => 0,
+        );
+        $post = $id ? get_post( $id ) : null;
+        if ( ! $post || self::POST_TYPE !== $post->post_type || 'trash' === $post->post_status ) { return $defaults; }
+        $defaults['id'] = (int) $post->ID;
+        $defaults['title'] = $post->post_title;
+        $defaults['status'] = $post->post_status;
+        foreach ( $defaults as $key => $value ) {
+            if ( in_array( $key, array( 'id', 'title', 'status' ), true ) ) { continue; }
+            if ( metadata_exists( 'post', $post->ID, '_stm_pm_' . $key ) ) {
+                $meta = get_post_meta( $post->ID, '_stm_pm_' . $key, true );
+                $defaults[ $key ] = is_int( $value ) ? (int) $meta : (string) $meta;
+            }
+        }
+        return $defaults;
+    }
+
+    public static function get_primary_popup_data() {
+        $posts = self::get_campaigns();
+        return self::get_popup_data( $posts ? $posts[0]->ID : 0 );
+    }
+
+    public static function get_campaigns( $status = array( 'publish', 'draft', 'pending', 'private' ) ) {
+        return get_posts( array( 'post_type' => self::POST_TYPE, 'post_status' => $status, 'posts_per_page' => -1, 'orderby' => array( 'date' => 'DESC', 'ID' => 'DESC' ) ) );
+    }
+
+    private function active_campaigns() {
+        $posts = self::get_campaigns( 'publish' );
+        usort( $posts, static function( $a, $b ) {
+            $priority = (int) get_post_meta( $b->ID, '_stm_pm_priority', true ) <=> (int) get_post_meta( $a->ID, '_stm_pm_priority', true );
+            return $priority ?: $b->ID <=> $a->ID;
+        } );
+        return $posts;
+    }
+
     public function enqueue_frontend_assets() {
-        if ( is_admin() ) {
-            return;
+        if ( is_admin() ) { return; }
+        $dashboard = function_exists( 'stm_is_tutor_dashboard_page' ) && stm_is_tutor_dashboard_page();
+        if ( 'popup-maker' === get_query_var( 'tutor_dashboard_page' ) && current_user_can( 'manage_options' ) ) {
+            wp_enqueue_media();
+            wp_enqueue_style( 'stm-popup-dashboard', STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-dashboard.css', array(), STM_TUTOR_CUSTOMIZATION_VERSION );
+            wp_enqueue_script( 'stm-popup-dashboard', STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-popup-dashboard.js', array( 'media-views' ), STM_TUTOR_CUSTOMIZATION_VERSION, true );
+            wp_localize_script( 'stm-popup-dashboard', 'stmPopupDashboard', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ), 'nonce' => wp_create_nonce( self::DASH_NONCE ), 'baseUrl' => self::dashboard_url() ) );
         }
-
-        // Enqueue Tutor LMS Dashboard assets when an administrator visits the dashboard
-        if ( is_user_logged_in() && current_user_can( 'manage_options' ) ) {
-            $is_dashboard = ( function_exists( 'stm_is_tutor_dashboard_page' ) && stm_is_tutor_dashboard_page() ) || ( 'popup-maker' === get_query_var( 'tutor_dashboard_page' ) );
-            if ( $is_dashboard ) {
-                wp_enqueue_media();
-                wp_enqueue_style( 'media-views' );
-                wp_enqueue_style( 'buttons' );
-                wp_enqueue_style( 'dashicons' );
-                wp_enqueue_style( 'common' );
-                wp_enqueue_style( 'forms' );
-                wp_enqueue_style(
-                    'stm-popup-admin-css',
-                    STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-admin.css',
-                    array(),
-                    STM_TUTOR_CUSTOMIZATION_VERSION
-                );
-            }
-        }
-
-        $popup = $this->get_active_popup();
-        if ( ! $popup ) {
-            return;
-        }
-
-        wp_enqueue_style(
-            'stm-popup-frontend-css',
-            STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-frontend.css',
-            array(),
-            STM_TUTOR_CUSTOMIZATION_VERSION
-        );
-
-        // Zero jQuery dependency on the frontend!
-        wp_enqueue_script(
-            'stm-popup-frontend-js',
-            STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-popup-frontend.js',
-            array(),
-            STM_TUTOR_CUSTOMIZATION_VERSION,
-            true
-        );
-
-        wp_localize_script(
-            'stm-popup-frontend-js',
-            'stmPopupMakerData',
-            array(
-                'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-            )
-        );
+        if ( $dashboard || ! $this->active_campaigns() ) { return; }
+        wp_enqueue_style( 'stm-popup-frontend-css', STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-frontend.css', array(), STM_TUTOR_CUSTOMIZATION_VERSION );
+        wp_enqueue_script( 'stm-popup-frontend-js', STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-popup-frontend.js', array(), STM_TUTOR_CUSTOMIZATION_VERSION, true );
+        wp_localize_script( 'stm-popup-frontend-js', 'stmPopupMakerData', array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) );
     }
 
-    /**
-     * Render the Live Modal on `wp_footer`
-     */
     public function render_frontend_popup() {
-        if ( is_admin() ) {
-            return;
-        }
-
-        $popup = $this->get_active_popup();
-        if ( ! $popup ) {
-            return;
-        }
-
-        $popup_id       = $popup->ID;
-        $title          = get_the_title( $popup_id );
-        $banner_url     = get_post_meta( $popup_id, '_stm_pm_banner_url', true );
-        $subtitle       = get_post_meta( $popup_id, '_stm_pm_subtitle', true );
-        $field_name     = get_post_meta( $popup_id, '_stm_pm_field_name', true );
-        $field_phone    = get_post_meta( $popup_id, '_stm_pm_field_phone', true );
-        $field_message  = get_post_meta( $popup_id, '_stm_pm_field_message', true );
-        $delay_sec      = get_post_meta( $popup_id, '_stm_pm_delay_sec', true );
-        $frequency_days = get_post_meta( $popup_id, '_stm_pm_frequency_days', true );
-        $cta_text       = get_post_meta( $popup_id, '_stm_pm_cta_text', true );
-
-        $delay_sec      = ( '' !== $delay_sec ) ? absint( $delay_sec ) : 2;
-        $frequency_days = ( '' !== $frequency_days ) ? absint( $frequency_days ) : 7;
-        $cta_text       = ! empty( $cta_text ) ? $cta_text : __( 'Submit', 'tutor' );
-        ?>
-        <!-- STM Tutor Popup Maker Modal Root -->
-        <div id="stm-popup-maker-modal" 
-             class="stm-pm-modal-root" 
-             data-popup-id="<?php echo esc_attr( $popup_id ); ?>" 
-             data-delay="<?php echo esc_attr( $delay_sec ); ?>" 
-             data-frequency="<?php echo esc_attr( $frequency_days ); ?>" 
-             role="dialog" 
-             aria-modal="true" 
-             aria-hidden="true" 
-             aria-labelledby="stm-pm-title">
-
-            <!-- 100% Viewport Overlay Backdrop -->
-            <div class="stm-pm-modal-backdrop" tabindex="-1"></div>
-
-            <!-- Centered Modal Container -->
-            <div class="stm-pm-modal-dialog">
-                
-                <!-- Prominent Close Button -->
-                <button type="button" class="stm-pm-modal-close" aria-label="<?php esc_attr_e( 'Close popup', 'tutor' ); ?>">&times;</button>
-
-                <!-- Banner Image (if configured) -->
-                <?php if ( ! empty( $banner_url ) ) : ?>
-                    <div class="stm-pm-banner-wrap">
-                        <img src="<?php echo esc_url( $banner_url ); ?>" alt="<?php echo esc_attr( $title ); ?>" class="stm-pm-banner-img">
-                    </div>
-                <?php endif; ?>
-
-                <!-- Modal Body -->
-                <div class="stm-pm-modal-body">
-                    <?php if ( ! empty( $title ) ) : ?>
-                        <h3 class="stm-pm-title" id="stm-pm-title"><?php echo esc_html( $title ); ?></h3>
-                    <?php endif; ?>
-
-                    <?php if ( ! empty( $subtitle ) ) : ?>
-                        <p class="stm-pm-subtitle"><?php echo esc_html( $subtitle ); ?></p>
-                    <?php endif; ?>
-
-                    <!-- Inline Feedback Notices -->
-                    <div id="stm-pm-error-notice" class="stm-pm-notice stm-pm-notice-error" style="display: none;" role="alert"></div>
-                    <div id="stm-pm-success-notice" class="stm-pm-notice stm-pm-notice-success" style="display: none;" role="status"></div>
-
-                    <!-- Dynamic Lead Form -->
-                    <form id="stm-pm-lead-form" class="stm-pm-form" method="post">
-                        <input type="hidden" name="popup_id" value="<?php echo esc_attr( $popup_id ); ?>">
-                        <input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( self::LEAD_NONCE ) ); ?>">
-
-                        <!-- Name Field (Optional) -->
-                        <?php if ( ! empty( $field_name ) ) : ?>
-                            <div class="stm-pm-field-group">
-                                <label for="stm_pm_lead_name" class="stm-pm-field-label"><?php esc_html_e( 'Full Name', 'tutor' ); ?></label>
-                                <input type="text" name="lead_name" id="stm_pm_lead_name" class="stm-pm-input" placeholder="<?php esc_attr_e( 'Enter your full name', 'tutor' ); ?>">
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Email Field (Always required) -->
-                        <div class="stm-pm-field-group">
-                            <label for="stm_pm_lead_email" class="stm-pm-field-label">
-                                <?php esc_html_e( 'Email Address', 'tutor' ); ?>
-                                <span class="stm-pm-required">*</span>
-                            </label>
-                            <input type="email" name="lead_email" id="stm_pm_lead_email" class="stm-pm-input" placeholder="<?php esc_attr_e( 'Enter your email address', 'tutor' ); ?>" required>
-                        </div>
-
-                        <!-- Phone Field (Optional) -->
-                        <?php if ( ! empty( $field_phone ) ) : ?>
-                            <div class="stm-pm-field-group">
-                                <label for="stm_pm_lead_phone" class="stm-pm-field-label"><?php esc_html_e( 'Phone Number', 'tutor' ); ?></label>
-                                <input type="tel" name="lead_phone" id="stm_pm_lead_phone" class="stm-pm-input" placeholder="<?php esc_attr_e( 'Enter your phone number', 'tutor' ); ?>">
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Message Field (Optional) -->
-                        <?php if ( ! empty( $field_message ) ) : ?>
-                            <div class="stm-pm-field-group">
-                                <label for="stm_pm_lead_message" class="stm-pm-field-label"><?php esc_html_e( 'Message / Note', 'tutor' ); ?></label>
-                                <textarea name="lead_message" id="stm_pm_lead_message" class="stm-pm-textarea" rows="3" placeholder="<?php esc_attr_e( 'Enter your message or note...', 'tutor' ); ?>"></textarea>
-                            </div>
-                        <?php endif; ?>
-
-                        <!-- Submit CTA Button -->
-                        <button type="submit" class="stm-pm-submit-btn">
-                            <span class="stm-pm-btn-spinner" style="display: none;"></span>
-                            <span class="stm-pm-btn-text"><?php echo esc_html( $cta_text ); ?></span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        <?php
+        if ( is_admin() || ( function_exists( 'stm_is_tutor_dashboard_page' ) && stm_is_tutor_dashboard_page() ) ) { return; }
+        foreach ( $this->active_campaigns() as $post ) { $this->render_popup_markup( self::get_popup_data( $post->ID ) ); }
     }
 
-    /* ==========================================================================
-       MODULE D: Lead Submission & CSV Export System
-       ========================================================================== */
-
-    /**
-     * AJAX handler to submit opt-in leads into custom table
-     */
-    public function handle_submit_lead() {
-        if ( ! check_ajax_referer( self::LEAD_NONCE, 'nonce', false ) ) {
-            wp_send_json_error( array( 'message' => __( 'Security verification failed. Please refresh the page.', 'tutor' ) ) );
-        }
-
-        global $wpdb;
-
-        $popup_id = isset( $_POST['popup_id'] ) ? absint( $_POST['popup_id'] ) : 0;
-        $name     = isset( $_POST['lead_name'] ) ? sanitize_text_field( wp_unslash( $_POST['lead_name'] ) ) : '';
-        $email    = isset( $_POST['lead_email'] ) ? sanitize_email( wp_unslash( $_POST['lead_email'] ) ) : '';
-        $phone    = isset( $_POST['lead_phone'] ) ? sanitize_text_field( wp_unslash( $_POST['lead_phone'] ) ) : '';
-        $message  = isset( $_POST['lead_message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['lead_message'] ) ) : '';
-        $page_url = isset( $_POST['page_url'] ) ? esc_url_raw( wp_unslash( $_POST['page_url'] ) ) : '';
-
-        // Validation: Email is strictly enforced
-        if ( empty( $email ) || ! is_email( $email ) ) {
-            wp_send_json_error( array( 'message' => __( 'Please enter a valid email address.', 'tutor' ) ) );
-        }
-
-        $table_name = $wpdb->prefix . self::TABLE_NAME;
-
-        $inserted = $wpdb->insert(
-            $table_name,
-            array(
-                'popup_id'   => $popup_id,
-                'name'       => $name,
-                'email'      => $email,
-                'phone'      => $phone,
-                'message'    => $message,
-                'page_url'   => $page_url,
-                'created_at' => current_time( 'mysql' ),
-            ),
-            array(
-                '%d',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-                '%s',
-            )
-        );
-
-        if ( false === $inserted ) {
-            wp_send_json_error( array( 'message' => __( 'Could not record lead at this time. Please try again.', 'tutor' ) ) );
-        }
-
-        wp_send_json_success( array(
-            'message' => __( 'Thank you! Your information has been submitted successfully.', 'tutor' ),
-        ) );
+    public function render_popup_markup( $popup, $preview = false ) {
+        include STM_TUTOR_CUSTOMIZATION_DIR . 'templates/popup-offer.php';
     }
 
-    /**
-     * Register Submenu Page under `popup_maker`
-     */
-    public function register_admin_submenus() {
-        add_submenu_page(
-            'edit.php?post_type=' . self::POST_TYPE,
-            __( 'Export Leads', 'tutor' ),
-            __( 'Export Leads', 'tutor' ),
-            'manage_options',
-            'stm-popup-export-leads',
-            array( $this, 'render_export_leads_page' )
-        );
+    public static function preview_url( $id ) {
+        return wp_nonce_url( add_query_arg( 'stm_pm_preview', absint( $id ), home_url( '/' ) ), 'stm_pm_preview_' . absint( $id ) );
     }
 
-    /**
-     * Render the Export Leads Admin Submenu Page
-     */
-    public function render_export_leads_page() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'tutor' ) );
-        }
-
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::TABLE_NAME;
-
-        // Ensure table exists
-        $this->maybe_create_table();
-
-        $total_leads = (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$table_name}" );
-        $recent_leads = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY id DESC LIMIT 100" );
-
-        $csv_download_url = wp_nonce_url(
-            admin_url( 'admin-post.php?action=download_popup_leads_csv' ),
-            'download_popup_leads_csv'
-        );
-        ?>
-        <div class="wrap stm-pm-export-page">
-            <div class="stm-pm-header-bar">
-                <div>
-                    <h1><?php esc_html_e( 'Popup Maker &mdash; Captured Leads', 'tutor' ); ?></h1>
-                    <p style="margin:4px 0 0 0; color:#64748b;"><?php esc_html_e( 'View captured opt-in leads and export all records to a clean CSV spreadsheet.', 'tutor' ); ?></p>
-                </div>
-                <div>
-                    <a href="<?php echo esc_url( $csv_download_url ); ?>" class="button button-primary button-hero" style="display: inline-flex; align-items: center; gap: 6px;">
-                        <span class="dashicons dashicons-download" style="vertical-align: middle;"></span>
-                        <?php esc_html_e( 'Download All Leads (.CSV)', 'tutor' ); ?>
-                    </a>
-                </div>
-            </div>
-
-            <!-- Stats Card -->
-            <div class="stm-pm-stats-card">
-                <span class="stm-pm-stats-num"><?php echo esc_html( number_format_i18n( $total_leads ) ); ?></span>
-                <span class="stm-pm-stats-label"><?php esc_html_e( 'Total Captured Leads', 'tutor' ); ?></span>
-            </div>
-
-            <!-- Leads Table -->
-            <div class="stm-pm-table-card">
-                <?php if ( empty( $recent_leads ) ) : ?>
-                    <div class="stm-pm-empty-state">
-                        <span class="dashicons dashicons-email-alt" style="font-size: 48px; width: 48px; height: 48px;"></span>
-                        <h3><?php esc_html_e( 'No leads recorded yet', 'tutor' ); ?></h3>
-                        <p><?php esc_html_e( 'When visitors submit their info via the live popup modal, their records will automatically appear here.', 'tutor' ); ?></p>
-                    </div>
-                <?php else : ?>
-                    <table class="wp-list-table widefat fixed striped">
-                        <thead>
-                            <tr>
-                                <th scope="col" style="width: 60px;"><?php esc_html_e( 'ID', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 140px;"><?php esc_html_e( 'Popup Title', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 130px;"><?php esc_html_e( 'Name', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 180px;"><?php esc_html_e( 'Email', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 130px;"><?php esc_html_e( 'Phone', 'tutor' ); ?></th>
-                                <th scope="col"><?php esc_html_e( 'Message', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 140px;"><?php esc_html_e( 'Page URL', 'tutor' ); ?></th>
-                                <th scope="col" style="width: 150px;"><?php esc_html_e( 'Submitted Date', 'tutor' ); ?></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ( $recent_leads as $lead ) : ?>
-                                <?php
-                                $popup_title = ! empty( $lead->popup_id ) ? get_the_title( $lead->popup_id ) : __( 'General', 'tutor' );
-                                ?>
-                                <tr>
-                                    <td><strong>#<?php echo esc_html( $lead->id ); ?></strong></td>
-                                    <td><?php echo esc_html( $popup_title ); ?></td>
-                                    <td><?php echo ! empty( $lead->name ) ? esc_html( $lead->name ) : '&mdash;'; ?></td>
-                                    <td>
-                                        <a href="mailto:<?php echo esc_attr( $lead->email ); ?>" style="font-weight: 600;">
-                                            <?php echo esc_html( $lead->email ); ?>
-                                        </a>
-                                    </td>
-                                    <td>
-                                        <?php if ( ! empty( $lead->phone ) ) : ?>
-                                            <a href="tel:<?php echo esc_attr( preg_replace( '/[^0-9\+]/', '', $lead->phone ) ); ?>">
-                                                <?php echo esc_html( $lead->phone ); ?>
-                                            </a>
-                                        <?php else : ?>
-                                            &mdash;
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo ! empty( $lead->message ) ? esc_html( wp_trim_words( $lead->message, 15, '...' ) ) : '&mdash;'; ?></td>
-                                    <td>
-                                        <?php if ( ! empty( $lead->page_url ) ) : ?>
-                                            <a href="<?php echo esc_url( $lead->page_url ); ?>" target="_blank" rel="noopener noreferrer">
-                                                <?php echo esc_html( wp_trim_words( $lead->page_url, 5, '...' ) ); ?>
-                                            </a>
-                                        <?php else : ?>
-                                            &mdash;
-                                        <?php endif; ?>
-                                    </td>
-                                    <td><?php echo esc_html( mysql2date( 'M j, Y g:i a', $lead->created_at ) ); ?></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php endif; ?>
-            </div>
-        </div>
-        <?php
-    }
-
-    /**
-     * CSV Generation Engine
-     * Hooked to `admin_post_download_popup_leads_csv`
-     */
-    public function handle_download_csv() {
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( esc_html__( 'You do not have sufficient permissions to access this page.', 'tutor' ) );
-        }
-
-        check_admin_referer( 'download_popup_leads_csv' );
-
-        global $wpdb;
-        $table_name = $wpdb->prefix . self::TABLE_NAME;
-
-        // Query all rows
-        $leads = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY id DESC" );
-
-        $filename = 'popup-leads-' . gmdate( 'Y-m-d_H-i-s' ) . '.csv';
-
-        // Clean HTTP headers for CSV download
+    public function render_preview() {
+        if ( ! isset( $_GET['stm_pm_preview'] ) ) { return; }
+        $id = absint( $_GET['stm_pm_preview'] );
+        if ( ! current_user_can( 'manage_options' ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ?? '' ) ), 'stm_pm_preview_' . $id ) ) { wp_die( 'You do not have permission to preview this popup.', '', array( 'response' => 403 ) ); }
+        $popup = self::get_popup_data( $id );
+        if ( ! $popup['id'] ) { wp_die( 'Popup not found.', '', array( 'response' => 404 ) ); }
         nocache_headers();
-        header( 'Content-Type: text/csv; charset=UTF-8' );
-        header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
-        header( 'Pragma: no-cache' );
-        header( 'Expires: 0' );
-
-        // Open output stream
-        $output = fopen( 'php://output', 'w' );
-
-        // UTF-8 BOM for Microsoft Excel compatibility
-        fprintf( $output, chr(0xEF) . chr(0xBB) . chr(0xBF) );
-
-        // Format CSV Column Headers
-        $headers = array(
-            'ID',
-            'Popup ID',
-            'Name',
-            'Email',
-            'Phone',
-            'Message',
-            'Page URL',
-            'Submission Date',
-        );
-        fputcsv( $output, $headers );
-
-        // Output rows
-        if ( ! empty( $leads ) ) {
-            foreach ( $leads as $lead ) {
-                $row = array(
-                    $lead->id,
-                    $lead->popup_id,
-                    $lead->name,
-                    $lead->email,
-                    $lead->phone,
-                    $lead->message,
-                    $lead->page_url,
-                    $lead->created_at,
-                );
-                fputcsv( $output, $row );
-            }
-        }
-
-        fclose( $output );
+        header( 'X-Robots-Tag: noindex, nofollow', true );
+        ?>
+        <!doctype html><html <?php language_attributes(); ?>><head><meta charset="<?php bloginfo( 'charset' ); ?>"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Popup preview</title><link rel="stylesheet" href="<?php echo esc_url( STM_TUTOR_CUSTOMIZATION_URL . 'asset/css/stm-popup-frontend.css?ver=' . STM_TUTOR_CUSTOMIZATION_VERSION ); ?>"></head><body style="margin:0;background:#eef1ed;font-family:system-ui"><div style="padding:18px;color:#34473d">Preview · No leads will be recorded</div><?php $this->render_popup_markup( $popup, true ); ?><script>window.stmPopupMakerData=<?php echo wp_json_encode( array( 'ajaxUrl' => admin_url( 'admin-ajax.php' ) ) ); ?>;</script><script src="<?php echo esc_url( STM_TUTOR_CUSTOMIZATION_URL . 'asset/js/stm-popup-frontend.js?ver=' . STM_TUTOR_CUSTOMIZATION_VERSION ); ?>"></script></body></html>
+        <?php
         exit;
     }
 
-    /**
-     * Helper to get or initialize primary popup settings for Tutor LMS Dashboard
-     */
-    public static function get_primary_popup_data() {
-        $popups = get_posts( array(
-            'post_type'      => self::POST_TYPE,
-            'post_status'    => array( 'publish', 'draft' ),
-            'posts_per_page' => 1,
-            'orderby'        => 'date',
-            'order'          => 'DESC',
-        ) );
-
-        if ( ! empty( $popups ) ) {
-            $p = $popups[0];
-            return array(
-                'id'             => $p->ID,
-                'title'          => $p->post_title,
-                'status'         => $p->post_status, // 'publish' or 'draft'
-                'banner_url'     => get_post_meta( $p->ID, '_stm_pm_banner_url', true ),
-                'banner_id'      => get_post_meta( $p->ID, '_stm_pm_banner_id', true ),
-                'subtitle'       => get_post_meta( $p->ID, '_stm_pm_subtitle', true ),
-                'field_name'     => get_post_meta( $p->ID, '_stm_pm_field_name', true ),
-                'field_email'    => 1, // Enforced required
-                'field_phone'    => get_post_meta( $p->ID, '_stm_pm_field_phone', true ),
-                'field_message'  => get_post_meta( $p->ID, '_stm_pm_field_message', true ),
-                'delay_sec'      => get_post_meta( $p->ID, '_stm_pm_delay_sec', true ) !== '' ? (int) get_post_meta( $p->ID, '_stm_pm_delay_sec', true ) : 2,
-                'frequency_days' => get_post_meta( $p->ID, '_stm_pm_frequency_days', true ) !== '' ? (int) get_post_meta( $p->ID, '_stm_pm_frequency_days', true ) : 7,
-                'cta_text'       => get_post_meta( $p->ID, '_stm_pm_cta_text', true ) ?: __( 'Submit', 'tutor' ),
-            );
-        }
-
-        return array(
-            'id'             => 0,
-            'title'          => __( 'Exclusive Tennis Coaching Offer', 'tutor' ),
-            'status'         => 'publish',
-            'banner_url'     => '',
-            'banner_id'      => 0,
-            'subtitle'       => __( 'Enter your details below to get instant access and special lesson discounts!', 'tutor' ),
-            'field_name'     => 1,
-            'field_email'    => 1,
-            'field_phone'    => 0,
-            'field_message'  => 0,
-            'delay_sec'      => 2,
-            'frequency_days' => 7,
-            'cta_text'       => __( 'Submit', 'tutor' ),
-        );
+    private function require_manager() {
+        if ( ! current_user_can( 'manage_options' ) ) { wp_send_json_error( array( 'message' => 'Only administrators can manage popups.' ), 403 ); }
+        if ( ! check_ajax_referer( self::DASH_NONCE, 'nonce', false ) ) { wp_send_json_error( array( 'message' => 'Your session has expired. Refresh the page and try again.' ), 403 ); }
     }
 
-    /**
-     * AJAX handler to save popup settings directly from Tutor LMS dashboard
-     */
-    public function handle_save_dashboard_settings() {
-        if ( ! check_ajax_referer( 'stm_popup_dashboard_nonce', 'nonce', false ) ) {
-            wp_send_json_error( array( 'message' => __( 'Security verification failed. Please refresh the page.', 'tutor' ) ) );
-        }
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => __( 'You do not have permission to modify popup settings.', 'tutor' ) ) );
-        }
-
-        $popup_id = isset( $_POST['popup_id'] ) ? absint( $_POST['popup_id'] ) : 0;
-        $title    = ! empty( $_POST['title'] ) ? sanitize_text_field( wp_unslash( $_POST['title'] ) ) : __( 'Exclusive Offer', 'tutor' );
-        $enabled  = ! empty( $_POST['enabled'] ) ? 'publish' : 'draft';
-
-        if ( $popup_id > 0 && get_post_type( $popup_id ) === self::POST_TYPE ) {
-            wp_update_post( array(
-                'ID'          => $popup_id,
-                'post_title'  => $title,
-                'post_status' => $enabled,
-            ) );
-        } else {
-            $popup_id = wp_insert_post( array(
-                'post_type'   => self::POST_TYPE,
-                'post_title'  => $title,
-                'post_status' => $enabled,
-            ) );
-        }
-
-        if ( is_wp_error( $popup_id ) ) {
-            wp_send_json_error( array( 'message' => __( 'Could not save popup settings. Please try again.', 'tutor' ) ) );
-        }
-
-        $banner_url     = isset( $_POST['banner_url'] ) ? esc_url_raw( wp_unslash( $_POST['banner_url'] ) ) : '';
-        $banner_id      = isset( $_POST['banner_id'] ) ? absint( $_POST['banner_id'] ) : 0;
-
-        // Process file upload if an image was selected directly in the form
-        if ( ! empty( $_FILES['banner_file']['name'] ) ) {
-            require_once ABSPATH . 'wp-admin/includes/image.php';
-            require_once ABSPATH . 'wp-admin/includes/file.php';
-            require_once ABSPATH . 'wp-admin/includes/media.php';
-
-            $upload_id = media_handle_upload( 'banner_file', $popup_id );
-            if ( ! is_wp_error( $upload_id ) ) {
-                $banner_id  = $upload_id;
-                $banner_url = wp_get_attachment_url( $upload_id );
-            }
-        }
-
-        $subtitle       = isset( $_POST['subtitle'] ) ? sanitize_text_field( wp_unslash( $_POST['subtitle'] ) ) : '';
-        $field_name     = ! empty( $_POST['field_name'] ) ? 1 : 0;
-        $field_phone    = ! empty( $_POST['field_phone'] ) ? 1 : 0;
-        $field_message  = ! empty( $_POST['field_message'] ) ? 1 : 0;
-        $delay_sec      = isset( $_POST['delay_sec'] ) ? absint( $_POST['delay_sec'] ) : 2;
-        $frequency_days = isset( $_POST['frequency_days'] ) ? absint( $_POST['frequency_days'] ) : 7;
-        $cta_text       = ! empty( $_POST['cta_text'] ) ? sanitize_text_field( wp_unslash( $_POST['cta_text'] ) ) : __( 'Submit', 'tutor' );
-
-        update_post_meta( $popup_id, '_stm_pm_banner_url', $banner_url );
-        update_post_meta( $popup_id, '_stm_pm_banner_id', $banner_id );
-        update_post_meta( $popup_id, '_stm_pm_subtitle', $subtitle );
-        update_post_meta( $popup_id, '_stm_pm_field_name', $field_name );
-        update_post_meta( $popup_id, '_stm_pm_field_email', 1 ); // Always required
-        update_post_meta( $popup_id, '_stm_pm_field_phone', $field_phone );
-        update_post_meta( $popup_id, '_stm_pm_field_message', $field_message );
-        update_post_meta( $popup_id, '_stm_pm_delay_sec', $delay_sec );
-        update_post_meta( $popup_id, '_stm_pm_frequency_days', $frequency_days );
-        update_post_meta( $popup_id, '_stm_pm_cta_text', $cta_text );
-
-        wp_send_json_success( array(
-            'message'    => __( 'Popup settings saved successfully!', 'tutor' ),
-            'popup_id'   => $popup_id,
-            'banner_url' => $banner_url,
-            'banner_id'  => $banner_id,
-        ) );
+    private function valid_document( $id ) {
+        $file = $id ? get_attached_file( $id ) : false;
+        return $file && is_file( $file ) && in_array( get_post_mime_type( $id ), self::document_mimes(), true );
     }
 
-    /**
-     * AJAX handler for direct instant image upload from Tutor LMS dashboard
-     */
     public function handle_dashboard_image_upload() {
-        if ( ! check_ajax_referer( 'stm_popup_dashboard_nonce', 'nonce', false ) ) {
-            wp_send_json_error( array( 'message' => __( 'Security verification failed. Please refresh the page.', 'tutor' ) ) );
-        }
-
-        if ( ! current_user_can( 'manage_options' ) ) {
-            wp_send_json_error( array( 'message' => __( 'You do not have permission to upload files.', 'tutor' ) ) );
-        }
-
-        if ( empty( $_FILES['banner_file']['name'] ) ) {
-            wp_send_json_error( array( 'message' => __( 'No file was selected. Please choose a photo.', 'tutor' ) ) );
-        }
-
-        $file = $_FILES['banner_file'];
-
-        // Strict image validation
-        $filetype = wp_check_filetype( $file['name'], null );
-        $allowed_mimes = array(
-            'jpg|jpeg|jpe' => 'image/jpeg',
-            'png'          => 'image/png',
-            'webp'         => 'image/webp',
-            'gif'          => 'image/gif',
-        );
-
-        if ( ! in_array( $filetype['type'], $allowed_mimes, true ) ) {
-            wp_send_json_error( array( 'message' => __( 'Invalid file format! Strictly images only: JPG, PNG, WEBP, or GIF.', 'tutor' ) ) );
-        }
-
+        $this->require_manager();
+        if ( ! current_user_can( 'upload_files' ) ) { wp_send_json_error( array( 'message' => 'You cannot upload media.' ), 403 ); }
+        $kind = isset( $_POST['kind'] ) ? sanitize_key( wp_unslash( $_POST['kind'] ) ) : 'image';
+        $key = isset( $_FILES['asset_file'] ) ? 'asset_file' : 'banner_file';
+        $file = $_FILES[ $key ] ?? null;
+        if ( ! $file || ! empty( $file['error'] ) ) { wp_send_json_error( array( 'message' => 'The upload failed. Check the file size and try again.' ), 400 ); }
+        $mimes = 'document' === $kind ? self::document_mimes() : array( 'jpg|jpeg|jpe' => 'image/jpeg', 'png' => 'image/png', 'webp' => 'image/webp', 'gif' => 'image/gif' );
+        $type = wp_check_filetype_and_ext( $file['tmp_name'], $file['name'], $mimes );
+        if ( empty( $type['type'] ) || ( 'image' === $kind && ! in_array( wp_get_image_mime( $file['tmp_name'] ), $mimes, true ) ) ) { wp_send_json_error( array( 'message' => 'document' === $kind ? 'Choose a PDF, DOC, DOCX, ODT or TXT document.' : 'Choose a JPG, PNG, WebP or GIF image.' ), 400 ); }
         require_once ABSPATH . 'wp-admin/includes/image.php';
         require_once ABSPATH . 'wp-admin/includes/file.php';
         require_once ABSPATH . 'wp-admin/includes/media.php';
+        $id = media_handle_upload( $key, 0, array(), array( 'test_form' => false, 'mimes' => $mimes ) );
+        if ( is_wp_error( $id ) ) { wp_send_json_error( array( 'message' => $id->get_error_message() ), 400 ); }
+        wp_send_json_success( array( 'id' => $id, 'url' => wp_get_attachment_url( $id ), 'filename' => basename( get_attached_file( $id ) ), 'mime' => get_post_mime_type( $id ) ) );
+    }
 
-        $att_id = media_handle_upload( 'banner_file', 0 );
-
-        if ( is_wp_error( $att_id ) ) {
-            wp_send_json_error( array( 'message' => $att_id->get_error_message() ) );
+    public function handle_save_dashboard_settings() {
+        $this->require_manager();
+        $id = absint( $_POST['popup_id'] ?? 0 );
+        if ( $id && ( self::POST_TYPE !== get_post_type( $id ) || 'trash' === get_post_status( $id ) ) ) { wp_send_json_error( array( 'message' => 'Popup not found. Return to the popup list.' ), 404 ); }
+        $title = sanitize_text_field( wp_unslash( $_POST['title'] ?? '' ) );
+        if ( '' === trim( $title ) ) { wp_send_json_error( array( 'message' => 'Add a headline for this popup.' ), 400 ); }
+        $banner = absint( $_POST['banner_id'] ?? 0 );
+        $banner_url = esc_url_raw( wp_unslash( $_POST['banner_url'] ?? '' ) );
+        if ( $banner ) {
+            if ( ! wp_attachment_is_image( $banner ) || ! preg_match( '/^image\/(jpeg|png|webp|gif)$/', get_post_mime_type( $banner ) ) ) { wp_send_json_error( array( 'message' => 'Choose a valid banner image from the Media Library.' ), 400 ); }
+            $banner_url = wp_get_attachment_url( $banner );
         }
+        $gift = absint( $_POST['gift_id'] ?? 0 );
+        if ( $gift && ! $this->valid_document( $gift ) ) { wp_send_json_error( array( 'message' => 'The gift document is unavailable. Choose a PDF, DOC, DOCX, ODT or TXT file from the Media Library.' ), 400 ); }
+        $post = array( 'post_type' => self::POST_TYPE, 'post_title' => mb_substr( $title, 0, 180 ), 'post_status' => '1' === (string) ( $_POST['enabled'] ?? '0' ) ? 'publish' : 'draft' );
+        if ( $id ) { $post['ID'] = $id; }
+        $id = $id ? wp_update_post( $post, true ) : wp_insert_post( $post, true );
+        if ( is_wp_error( $id ) || ! $id ) { wp_send_json_error( array( 'message' => 'Could not save this popup. Please try again.' ), 500 ); }
+        $meta = array(
+            'banner_id' => $banner, 'banner_url' => $banner_url, 'gift_id' => $gift,
+            'subtitle' => sanitize_textarea_field( wp_unslash( $_POST['subtitle'] ?? '' ) ),
+            'field_name' => empty( $_POST['field_name'] ) ? 0 : 1, 'field_phone' => empty( $_POST['field_phone'] ) ? 0 : 1, 'field_message' => empty( $_POST['field_message'] ) ? 0 : 1,
+            'delay_sec' => min( 120, absint( $_POST['delay_sec'] ?? 3 ) ), 'frequency_days' => min( 365, absint( $_POST['frequency_days'] ?? 7 ) ),
+            'priority' => min( 100, absint( $_POST['priority'] ?? 0 ) ),
+            'cta_text' => sanitize_text_field( wp_unslash( $_POST['cta_text'] ?? '' ) ) ?: 'Get my free guide',
+            'gift_label' => sanitize_text_field( wp_unslash( $_POST['gift_label'] ?? '' ) ) ?: 'Download your gift',
+            'success_message' => sanitize_textarea_field( wp_unslash( $_POST['success_message'] ?? '' ) ) ?: 'Thank you! Your submission has been received.',
+        );
+        foreach ( $meta as $key => $value ) { update_post_meta( $id, '_stm_pm_' . $key, $value ); }
+        $this->invalidate_popup_cache();
+        wp_send_json_success( array( 'popup_id' => $id, 'message' => 'Popup saved.', 'preview_url' => self::preview_url( $id ) ) );
+    }
 
-        $image_url = wp_get_attachment_url( $att_id );
+    public function handle_campaign_action() {
+        $this->require_manager();
+        $id = absint( $_POST['popup_id'] ?? 0 );
+        if ( self::POST_TYPE !== get_post_type( $id ) || 'trash' === get_post_status( $id ) ) { wp_send_json_error( array( 'message' => 'Popup not found.' ), 404 ); }
+        $operation = sanitize_key( wp_unslash( $_POST['operation'] ?? '' ) );
+        if ( 'duplicate' === $operation ) {
+            $copy = wp_insert_post( array( 'post_type' => self::POST_TYPE, 'post_title' => get_the_title( $id ) . ' (copy)', 'post_status' => 'draft' ), true );
+            if ( is_wp_error( $copy ) || ! $copy ) { wp_send_json_error( array( 'message' => 'Could not duplicate this popup.' ), 500 ); }
+            foreach ( get_post_meta( $id ) as $key => $values ) {
+                if ( 0 === strpos( $key, '_stm_pm_' ) ) { update_post_meta( $copy, $key, maybe_unserialize( $values[0] ) ); }
+            }
+            wp_send_json_success( array( 'popup_id' => $copy, 'operation' => 'duplicated' ) );
+        }
+        if ( 'trash' === $operation ) {
+            if ( ! wp_trash_post( $id ) ) { wp_send_json_error( array( 'message' => 'Could not move this popup to trash.' ), 500 ); }
+        } elseif ( in_array( $operation, array( 'activate', 'pause' ), true ) ) {
+            $saved = wp_update_post( array( 'ID' => $id, 'post_status' => 'activate' === $operation ? 'publish' : 'draft' ), true );
+            if ( is_wp_error( $saved ) ) { wp_send_json_error( array( 'message' => 'Could not change popup status.' ), 500 ); }
+        } else { wp_send_json_error( array( 'message' => 'Unknown popup action.' ), 400 ); }
+        $this->invalidate_popup_cache();
+        wp_send_json_success( array( 'popup_id' => $id, 'operation' => $operation ) );
+    }
 
-        wp_send_json_success( array(
-            'message' => __( 'Photo uploaded successfully!', 'tutor' ),
-            'url'     => $image_url,
-            'id'      => $att_id,
-        ) );
+    public function handle_submit_lead() {
+        if ( ! check_ajax_referer( self::LEAD_NONCE, 'nonce', false ) ) { wp_send_json_error( array( 'message' => 'Refresh the page and try again.' ), 403 ); }
+        $id = absint( $_POST['popup_id'] ?? 0 );
+        if ( self::POST_TYPE !== get_post_type( $id ) || 'publish' !== get_post_status( $id ) ) { wp_send_json_error( array( 'message' => 'This offer is no longer active.' ), 400 ); }
+        if ( ! empty( $_POST['company_website'] ) ) { wp_send_json_error( array( 'message' => 'Please try again.' ), 400 ); }
+        $email = sanitize_email( wp_unslash( $_POST['lead_email'] ?? '' ) );
+        if ( ! is_email( $email ) || strlen( $email ) > 120 ) { wp_send_json_error( array( 'message' => 'Enter a valid email address.' ), 400 ); }
+        $popup = self::get_popup_data( $id );
+        global $wpdb;
+        $record = array(
+            'popup_id' => $id,
+            'name' => $popup['field_name'] ? mb_substr( sanitize_text_field( wp_unslash( $_POST['lead_name'] ?? '' ) ), 0, 120 ) : '',
+            'email' => $email,
+            'phone' => $popup['field_phone'] ? mb_substr( sanitize_text_field( wp_unslash( $_POST['lead_phone'] ?? '' ) ), 0, 50 ) : '',
+            'message' => $popup['field_message'] ? mb_substr( sanitize_textarea_field( wp_unslash( $_POST['lead_message'] ?? '' ) ), 0, 5000 ) : '',
+            'page_url' => mb_substr( esc_url_raw( wp_unslash( $_POST['page_url'] ?? '' ) ), 0, 255 ), 'created_at' => current_time( 'mysql' ),
+        );
+        if ( false === $wpdb->insert( $wpdb->prefix . self::TABLE_NAME, $record, array( '%d', '%s', '%s', '%s', '%s', '%s', '%s' ) ) ) { wp_send_json_error( array( 'message' => 'We could not save your details. Please try again.' ), 500 ); }
+        $lead_id = (int) $wpdb->insert_id;
+        $result = array( 'message' => $popup['success_message'] ?: 'Thank you! Your submission has been received.' );
+        if ( $popup['gift_id'] && $this->valid_document( $popup['gift_id'] ) ) {
+            $result['gift_url'] = $this->gift_url( $lead_id, $popup['gift_id'] );
+            $result['gift_label'] = $popup['gift_label'];
+            $result['gift_name'] = basename( get_attached_file( $popup['gift_id'] ) );
+        }
+        wp_send_json_success( $result );
+    }
+
+    private function gift_url( $lead, $file ) {
+        $expires = time() + DAY_IN_SECONDS;
+        $token = hash_hmac( 'sha256', $lead . '|' . $file . '|' . $expires, wp_salt( 'auth' ) );
+        return add_query_arg( array( 'action' => 'stm_popup_download_gift', 'lead' => $lead, 'file' => $file, 'expires' => $expires, 'token' => $token ), admin_url( 'admin-post.php' ) );
+    }
+
+    public function handle_download_gift() {
+        $lead = absint( $_GET['lead'] ?? 0 ); $file = absint( $_GET['file'] ?? 0 ); $expires = absint( $_GET['expires'] ?? 0 );
+        $token = sanitize_text_field( wp_unslash( $_GET['token'] ?? '' ) );
+        $expected = hash_hmac( 'sha256', $lead . '|' . $file . '|' . $expires, wp_salt( 'auth' ) );
+        global $wpdb;
+        if ( ! $lead || $expires < time() || $expires > time() + DAY_IN_SECONDS + 60 || ! hash_equals( $expected, $token ) || ! $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM ' . $wpdb->prefix . self::TABLE_NAME . ' WHERE id=%d', $lead ) ) || ! $this->valid_document( $file ) ) { wp_die( 'This gift link is invalid or has expired. Please submit the offer form again.', '', array( 'response' => 403 ) ); }
+        $path = realpath( get_attached_file( $file ) ); $uploads = realpath( wp_upload_dir()['basedir'] );
+        if ( ! $path || ! $uploads || 0 !== strpos( wp_normalize_path( $path ), trailingslashit( wp_normalize_path( $uploads ) ) ) ) { wp_die( 'Document unavailable.', '', array( 'response' => 404 ) ); }
+        nocache_headers(); header( 'X-Content-Type-Options: nosniff' );
+        header( 'Content-Type: ' . get_post_mime_type( $file ) );
+        header( 'Content-Disposition: attachment; filename="' . sanitize_file_name( basename( $path ) ) . '"' );
+        header( 'Content-Length: ' . filesize( $path ) );
+        readfile( $path ); exit;
+    }
+
+    public function handle_download_csv() {
+        if ( ! current_user_can( 'manage_options' ) ) { wp_die( 'Administrator access required.', '', array( 'response' => 403 ) ); }
+        check_admin_referer( 'download_popup_leads_csv' );
+        global $wpdb;
+        $table = $wpdb->prefix . self::TABLE_NAME; $id = absint( $_GET['campaign'] ?? 0 );
+        $rows = $wpdb->get_results( $id ? $wpdb->prepare( "SELECT * FROM {$table} WHERE popup_id=%d ORDER BY id DESC", $id ) : "SELECT * FROM {$table} ORDER BY id DESC" );
+        nocache_headers(); header( 'Content-Type: text/csv; charset=UTF-8' ); header( 'Content-Disposition: attachment; filename="popup-leads-' . gmdate( 'Y-m-d' ) . '.csv"' );
+        $out = fopen( 'php://output', 'w' ); fwrite( $out, "\xEF\xBB\xBF" );
+        fputcsv( $out, array( 'ID', 'Popup', 'Name', 'Email', 'Phone', 'Message', 'Page URL', 'Submitted' ) );
+        foreach ( $rows as $row ) {
+            $cells = array( $row->id, get_the_title( $row->popup_id ), $row->name, $row->email, $row->phone, $row->message, $row->page_url, $row->created_at );
+            fputcsv( $out, array_map( static function( $value ) { $value = (string) $value; return preg_match( '/^[\s]*[=+@-]|^[\t\r\n]/u', $value ) ? "'" . $value : $value; }, $cells ) );
+        }
+        fclose( $out ); exit;
+    }
+
+    public function register_meta_boxes() {
+        add_meta_box( 'stm-popup-manager', 'Popup design & gift', function( $post ) {
+            echo '<p>Manage the banner, gift document, form and display settings in Popup &amp; Leads.</p><a class="button button-primary" href="' . esc_url( add_query_arg( 'popup', $post->ID, self::dashboard_url() ) ) . '">Open popup editor</a>';
+        }, self::POST_TYPE, 'normal', 'high' );
+    }
+
+    public function register_admin_submenus() {
+        add_submenu_page( 'edit.php?post_type=' . self::POST_TYPE, 'Popup & Leads', 'Popup & Leads', 'manage_options', 'stm-popup-manager', function() {
+            echo '<div class="wrap"><h1>Popup &amp; Leads</h1><p>Manage all campaigns, documents and captured leads from your dashboard.</p><a class="button button-primary" href="' . esc_url( self::dashboard_url() ) . '">Open popup manager</a></div>';
+        } );
     }
 }
